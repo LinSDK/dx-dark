@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Command-line tool for testing the strip directly (info, colors, effects, benchmark, listen). -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>dxdark-cli</AssemblyName>
+    <RootNamespace>DxDark.Cli</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DxDark.Protocol\DxDark.Protocol.csproj" />
+    <ProjectReference Include="..\..\src\DxDark.Capture\DxDark.Capture.csproj" />
+    <ProjectReference Include="..\..\src\DxDark.Core\DxDark.Core.csproj" />
+  </ItemGroup>
+
+</Project>

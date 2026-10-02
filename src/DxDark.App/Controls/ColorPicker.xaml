@@ -1,0 +1,30 @@
+<UserControl x:Class="DxDark.App.Controls.ColorPicker"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Margin="0,0,20,0">
+            <Border x:Name="Preview" Width="86" Height="86" CornerRadius="14"
+                    BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1" />
+            <TextBox x:Name="HexBox" Margin="0,10,0,0" Width="86" HorizontalContentAlignment="Center" MinWidth="0" />
+        </StackPanel>
+
+        <StackPanel Grid.Column="1">
+            <TextBlock Text="Hue" Style="{StaticResource Caption}" />
+            <Border Height="6" CornerRadius="3" Margin="10,6,10,0" Background="{StaticResource HueBrush}" />
+            <Slider x:Name="HueSlider" Minimum="0" Maximum="360" Margin="0,0,0,8" IsMoveToPointEnabled="True" />
+
+            <TextBlock Text="Saturation" Style="{StaticResource Caption}" />
+            <Border x:Name="SaturationBar" Height="6" CornerRadius="3" Margin="10,6,10,0" />
+            <Slider x:Name="SaturationSlider" Minimum="0" Maximum="1" Margin="0,0,0,8" IsMoveToPointEnabled="True" />
+
+            <TextBlock Text="Brightness" Style="{StaticResource Caption}" />
+            <Border x:Name="ValueBar" Height="6" CornerRadius="3" Margin="10,6,10,0" />
+            <Slider x:Name="ValueSlider" Minimum="0" Maximum="1" IsMoveToPointEnabled="True" />
+        </StackPanel>
+    </Grid>
+</UserControl>

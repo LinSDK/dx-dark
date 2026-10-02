@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Layout, color processing, sync engine, settings and the lighting state machine. -->
+  <ItemGroup>
+    <ProjectReference Include="..\DxDark.Protocol\DxDark.Protocol.csproj" />
+    <ProjectReference Include="..\DxDark.Capture\DxDark.Capture.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="DxDark.Tests" />
+  </ItemGroup>
+
+</Project>

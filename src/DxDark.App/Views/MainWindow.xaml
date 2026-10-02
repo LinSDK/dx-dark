@@ -1,0 +1,407 @@
+<Window x:Class="DxDark.App.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DxDark.App.Controls"
+        Title="DX Dark"
+        Width="1360" Height="860" MinWidth="1120" MinHeight="680"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource WindowBrush}"
+        Foreground="{StaticResource TextBrush}"
+        Icon="/Assets/DxDark.ico">
+    <Grid x:Name="Root" Background="{StaticResource WindowBrush}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="216" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="340" />
+        </Grid.ColumnDefinitions>
+
+        <!-- ── Sidebar ─────────────────────────────────────────────────────── -->
+        <Border Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="0,0,1,0">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="20,22,16,26">
+                    <Image Source="/Assets/DxDark-256.png" Width="34" Height="34" RenderOptions.BitmapScalingMode="HighQuality" />
+                    <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="DX Dark" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="{Binding VersionText}" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel DockPanel.Dock="Bottom" Margin="10,0,10,12">
+                    <Button Style="{StaticResource FlatButton}" Click="OnOpenSettings" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE713;" Style="{StaticResource Icon}" Width="22" />
+                            <TextBlock Text="Settings" FontSize="14" Margin="10,0,0,0" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+
+                    <Border Style="{StaticResource Card}" Padding="14,12" Cursor="Hand" MouseLeftButtonUp="OnToggleDetails">
+                        <StackPanel>
+                            <DockPanel>
+                                <TextBlock x:Name="Chevron" DockPanel.Dock="Right" Text="&#xE70D;" Style="{StaticResource Icon}"
+                                           FontSize="10" Foreground="{StaticResource TextTertiaryBrush}" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse Width="9" Height="9" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding StatusTitle}" Margin="8,0,0,0" FontWeight="SemiBold" />
+                                </StackPanel>
+                            </DockPanel>
+                            <TextBlock Text="{Binding StatusDetail}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                            <Grid Margin="0,12,0,0" Visibility="{Binding ShowDetails, Converter={StaticResource BoolToVisibility}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="66" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Grid.Row="0" Text="Model" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DetailModel}" FontSize="12" TextWrapping="Wrap" Margin="0,2" />
+                                <TextBlock Grid.Row="1" Text="Firmware" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DetailFirmware}" FontSize="12" Margin="0,2" />
+                                <TextBlock Grid.Row="2" Text="LEDs" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding DetailLeds}" FontSize="12" Margin="0,2" />
+                                <TextBlock Grid.Row="3" Text="Kit" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding DetailKit}" FontSize="12" Margin="0,2" />
+                                <TextBlock Grid.Row="4" Text="Zones" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DetailZones}" FontSize="12" Margin="0,2" />
+                                <TextBlock Grid.Row="5" Text="ID" Style="{StaticResource Caption}" Margin="0,2" />
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding DetailId}" FontSize="12" TextTrimming="CharacterEllipsis" Margin="0,2" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+
+                <ListBox x:Name="Nav" Style="{StaticResource NavList}" Margin="10,0" />
+            </DockPanel>
+        </Border>
+
+        <!-- ── Live view ───────────────────────────────────────────────────── -->
+        <Grid Grid.Column="1" Margin="22,20,18,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatsText}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,12,0" />
+                    <ToggleButton x:Name="ZonesToggle" Style="{StaticResource IconToggle}" Content="&#xE80A;" IsChecked="True" ToolTip="Show sampling zones" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <RadioButton Style="{StaticResource SegmentRadio}" GroupName="Source" IsChecked="{Binding IsScreen}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7F4;" Style="{StaticResource Icon}" FontSize="14" Margin="0,0,8,0" />
+                            <TextBlock Text="Screen" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource SegmentRadio}" GroupName="Source" IsChecked="{Binding IsEffect}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE945;" Style="{StaticResource Icon}" FontSize="14" Margin="0,0,8,0" />
+                            <TextBlock Text="Effect" />
+                        </StackPanel>
+                    </RadioButton>
+                    <RadioButton Style="{StaticResource SegmentRadio}" GroupName="Source" IsChecked="{Binding IsOff}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7E8;" Style="{StaticResource Icon}" FontSize="14" Margin="0,0,8,0" />
+                            <TextBlock Text="Off" />
+                        </StackPanel>
+                    </RadioButton>
+                </StackPanel>
+            </DockPanel>
+
+            <Border Grid.Row="1" Style="{StaticResource Card}" Padding="8" Margin="0,14,0,0">
+                <Grid>
+                    <controls:PreviewSurface x:Name="Surface" ShowZones="{Binding IsChecked, ElementName=ZonesToggle}" />
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,16,0,0">
+                        <Border Visibility="{Binding IsControllerMode, Converter={StaticResource BoolToVisibility}}" Margin="0,0,0,8"
+                                HorizontalAlignment="Center" Padding="14,6" CornerRadius="14"
+                                Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningBrush}" BorderThickness="1">
+                            <TextBlock Text="The strip's own buttons are in control" FontSize="12.5" />
+                        </Border>
+                        <Border Visibility="{Binding ShowNoZonesWarning, Converter={StaticResource BoolToVisibility}}"
+                                HorizontalAlignment="Center" Padding="12,5,5,5" CornerRadius="16"
+                                Background="{StaticResource WarningSoftBrush}" BorderBrush="{StaticResource WarningBrush}" BorderThickness="1">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE7BA;" Style="{StaticResource Icon}" FontSize="13" Foreground="{StaticResource WarningBrush}" Margin="0,0,8,0" />
+                                <TextBlock Text="No zones have been set, so the strip stays dark." FontSize="12.5" VerticalAlignment="Center" />
+                                <Button Content="Set up zones" Margin="12,0,0,0" Padding="10,3" FontSize="12.5" Click="OnSetUpZones" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Effect gallery -->
+            <Border Grid.Row="2" Style="{StaticResource Card}" Margin="0,14,0,0" Padding="14,12,14,8"
+                    Visibility="{Binding ShowEffectGallery, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Padding="0,0,0,6">
+                        <StackPanel Orientation="Horizontal">
+                            <ItemsControl ItemsSource="{Binding Effects.Tiles}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <RadioButton Style="{StaticResource EffectTile}" GroupName="Effects" IsChecked="{Binding IsSelected}"
+                                                         Checked="OnEffectTileChecked">
+                                                <StackPanel Width="116">
+                                                    <Border Height="65" CornerRadius="6" Background="{StaticResource InsetBrush}">
+                                                        <Border CornerRadius="6">
+                                                            <Border.Background>
+                                                                <ImageBrush ImageSource="{Binding Thumbnail}" Stretch="UniformToFill" />
+                                                            </Border.Background>
+                                                        </Border>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding Name}" Margin="3,6,3,1" FontSize="12.5" TextTrimming="CharacterEllipsis" />
+                                                </StackPanel>
+                                            </RadioButton>
+                                            <Button Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="9" Foreground="{StaticResource TextBrush}"
+                                                    Background="#99000000" Padding="5" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,18,0"
+                                                    ToolTip="Remove" Command="{Binding RemoveCommand}"
+                                                    Visibility="{Binding IsVideo, Converter={StaticResource BoolToVisibility}}" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <Button Style="{StaticResource FlatButton}" Command="{Binding Effects.AddVideoCommand}" Width="124" Height="99"
+                                    BorderThickness="0" HorizontalContentAlignment="Center" Background="{StaticResource InsetBrush}">
+                                <StackPanel HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" HorizontalAlignment="Center" FontSize="18" />
+                                    <TextBlock Text="Add video" Margin="0,8,0,0" FontSize="12.5" HorizontalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="260" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:SettingSlider Label="Speed" Value="{Binding Effects.Speed}" Minimum="0.25" Maximum="3" Step="0.05"
+                                                Format="0.00" Unit="×" DefaultValue="1" ValueWidth="70" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="28,0,0,0"
+                                    Visibility="{Binding Effects.ShowColor, Converter={StaticResource BoolToVisibility}}">
+                            <ItemsControl ItemsSource="{Binding Effects.Swatches}" VerticalAlignment="Center">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Style="{StaticResource Swatch}" Background="{Binding Brush}" ToolTip="{Binding Name}" Margin="0,0,6,0"
+                                                Command="{Binding DataContext.Effects.SwatchCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
+                                                CommandParameter="{Binding}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ToggleButton x:Name="CustomColorToggle" Style="{StaticResource IconToggle}" Content="&#xE790;" ToolTip="Custom color" Margin="4,0,0,0" />
+                            <Popup IsOpen="{Binding IsChecked, ElementName=CustomColorToggle}" PlacementTarget="{Binding ElementName=CustomColorToggle}"
+                                   Placement="Top" StaysOpen="False" AllowsTransparency="True" Closed="OnColorPopupClosed">
+                                <Border Style="{StaticResource Card}" Width="420" Padding="18" Margin="0,0,0,8">
+                                    <controls:ColorPicker Hex="{Binding Effects.SolidColor}" />
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ── Preset strip (Live) ─────────────────────────────────────────── -->
+        <Border Grid.Column="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1,0,0,0"
+                Visibility="{Binding IsLivePage, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="18,20,18,4">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <ComboBox ItemsSource="{Binding Presets.ProfileNames}" SelectedItem="{Binding Presets.SelectedProfile}" ToolTip="Preset" />
+                    <!-- Icons go in an inner TextBlock: a font set on the button itself would also apply to its tooltip and menu. -->
+                    <Button Grid.Column="1" Margin="6,0,0,0" Padding="10,8" MinWidth="0" ToolTip="Save as new preset" Command="{Binding Presets.SaveAsCommand}">
+                        <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" FontSize="14" />
+                    </Button>
+                    <Button x:Name="PresetMenuButton" Grid.Column="2" Margin="6,0,0,0" Padding="10,8" MinWidth="0" ToolTip="More" Click="OnPresetMenu">
+                        <TextBlock Text="&#xE712;" FontFamily="{StaticResource IconFont}" FontSize="14" />
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="Rename…" Command="{Binding Presets.RenameCommand}" />
+                                <MenuItem Header="Reset to defaults" Command="{Binding Presets.ResetCommand}" />
+                                <MenuItem Header="Delete" Command="{Binding Presets.DeleteCommand}" />
+                                <Separator />
+                                <MenuItem Header="Import…" Command="{Binding Presets.ImportCommand}" />
+                                <MenuItem Header="Export…" Command="{Binding Presets.ExportCommand}" />
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                </Grid>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14,18,18">
+                    <StackPanel>
+                        <Border Style="{StaticResource StripSection}">
+                            <StackPanel>
+                                <TextBlock Text="CAPTURE" Style="{StaticResource StripHeader}" Margin="0,0,0,10" />
+                                <ComboBox ItemsSource="{Binding Presets.Monitors}" SelectedItem="{Binding Presets.SelectedMonitor}" DisplayMemberPath="Label"
+                                          Margin="0,0,0,10" ToolTip="Monitor"
+                                          Visibility="{Binding Presets.ShowMonitorChoice, Converter={StaticResource BoolToVisibility}}" />
+                                <controls:SettingSlider Label="Updates per second" Value="{Binding Presets.FrameRate}"
+                                                        Minimum="10" Maximum="120" Step="5" Format="0" Unit="fps"
+                                                        DefaultValue="{Binding Presets.Defaults.FrameRate}"
+                                                        Description="How often the strip is updated. Independent of the monitor's refresh rate." />
+                                <controls:SettingSlider Label="Sampling depth" Value="{Binding Presets.SampleDepth}"
+                                                        Minimum="0.02" Maximum="0.5" Step="0.01" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.SampleDepth}"
+                                                        Description="How far into the picture each LED looks." />
+                                <controls:SettingSlider Label="Zone overlap" Value="{Binding Presets.ZoneOverlap}"
+                                                        Minimum="0" Maximum="3" Step="0.1" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.ZoneOverlap}"
+                                                        Description="How much each zone overlaps its neighbors." />
+                                <controls:SettingSlider Label="Color focus" Value="{Binding Presets.ColorFocus}"
+                                                        Minimum="0" Maximum="1" Step="0.05" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.ColorFocus}"
+                                                        Description="0 % averages each zone; higher values favor vivid colors." />
+                                <CheckBox Content="Ignore black bars" IsChecked="{Binding Presets.DetectBlackBars}" Margin="0,4,0,0" />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StripSection}">
+                            <StackPanel>
+                                <TextBlock Text="MOTION" Style="{StaticResource StripHeader}" Margin="0,0,0,10" />
+                                <controls:SettingSlider Label="Smoothing" Value="{Binding Presets.Smoothing}"
+                                                        Minimum="0" Maximum="1500" Step="10" Format="0" Unit="ms"
+                                                        DefaultValue="{Binding Presets.Defaults.Smoothing}"
+                                                        Description="Fade time between colors." />
+                                <controls:SettingSlider Label="Neighbor blending" Value="{Binding Presets.SpatialBlend}"
+                                                        Minimum="0" Maximum="6" Step="0.1" Format="0.0" Unit="LEDs"
+                                                        DefaultValue="{Binding Presets.Defaults.SpatialBlend}"
+                                                        Description="Blends each LED with its neighbors so motion glides along the strip." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StripSection}">
+                            <StackPanel>
+                                <TextBlock Text="LIGHT" Style="{StaticResource StripHeader}" Margin="0,0,0,10" />
+                                <controls:SettingSlider Label="Brightness" Value="{Binding Presets.Brightness}"
+                                                        Minimum="0" Maximum="1" Step="0.01" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.Brightness}" />
+                                <controls:SettingSlider Label="Contrast" Value="{Binding Presets.Contrast}"
+                                                        Minimum="0.5" Maximum="2" Step="0.05" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.Contrast}" />
+                                <controls:SettingSlider Label="Gamma" Value="{Binding Presets.Gamma}"
+                                                        Minimum="0.5" Maximum="3" Step="0.05" Format="0.00"
+                                                        DefaultValue="{Binding Presets.Defaults.Gamma}"
+                                                        Description="1.00 sends the picture as-is; higher deepens mid-tones." />
+                                <controls:SettingSlider Label="Black threshold" Value="{Binding Presets.BlackThreshold}"
+                                                        Minimum="0" Maximum="0.4" Step="0.01" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.BlackThreshold}"
+                                                        Description="Very dark areas fade the LEDs out smoothly." />
+                            </StackPanel>
+                        </Border>
+                        <Border Style="{StaticResource StripSection}">
+                            <StackPanel>
+                                <TextBlock Text="COLOR" Style="{StaticResource StripHeader}" Margin="0,0,0,10" />
+                                <controls:SettingSlider Label="Saturation" Value="{Binding Presets.Saturation}"
+                                                        Minimum="0" Maximum="2.5" Step="0.05" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.Saturation}" />
+                                <controls:SettingSlider Label="Vibrance" Value="{Binding Presets.Vibrance}"
+                                                        Minimum="0" Maximum="1" Step="0.05" Scale="100" Format="0" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.Vibrance}"
+                                                        Description="Boosts muted colors more than vivid ones." />
+                                <controls:SettingSlider Label="Temperature" Value="{Binding Presets.Temperature}"
+                                                        Minimum="2000" Maximum="10000" Step="100" Format="0" Unit="K"
+                                                        DefaultValue="{Binding Presets.Defaults.Temperature}"
+                                                        Description="6500 K is neutral; lower is warmer." />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Calibration strip ───────────────────────────────────────────── -->
+        <Border Grid.Column="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1,0,0,0"
+                Visibility="{Binding IsCalibrationPage, Converter={StaticResource BoolToVisibility}}">
+            <DockPanel>
+                <Button DockPanel.Dock="Top" Margin="18,20,18,4" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                        Click="OnShowTestPattern" ToolTip="Fills the synced screen with a test pattern; the zones can still be edited over it">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="&#xE740;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <TextBlock Text="Show test pattern" VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,16,10,18">
+                    <controls:CalibrationPanel DataContext="{Binding Calibration}" CardWidth="296" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- ── Settings sheet ──────────────────────────────────────────────── -->
+        <Grid x:Name="SettingsOverlay" Grid.ColumnSpan="3" Background="#B3000000" Visibility="Collapsed" MouseLeftButtonDown="OnOverlayBackgroundClick">
+            <Border x:Name="SettingsSheet" Style="{StaticResource Card}" Width="560" Padding="0"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MouseLeftButtonDown="OnSheetClick">
+                <DockPanel>
+                    <DockPanel DockPanel.Dock="Top" Margin="24,18,14,4">
+                        <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="12" Padding="9"
+                                Click="OnCloseSettings" ToolTip="Close" />
+                        <TextBlock Text="Settings" Style="{StaticResource Title}" VerticalAlignment="Center" />
+                    </DockPanel>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="24,0,24,22">
+                        <StackPanel DataContext="{Binding Settings}">
+                            <TextBlock Text="STARTUP" Style="{StaticResource StripHeader}" Margin="0,10,0,8" />
+                            <CheckBox Content="Start with Windows" IsChecked="{Binding StartWithWindows}" />
+
+                            <TextBlock Text="LIGHTS" Style="{StaticResource StripHeader}" />
+                            <CheckBox Content="Off while the PC is locked" IsChecked="{Binding OffWhenLocked}" Margin="0,0,0,6" />
+                            <CheckBox Content="Off when the display sleeps" IsChecked="{Binding OffWhenDisplayOff}" Margin="0,0,0,12" />
+                            <DockPanel>
+                                <TextBlock Text="When DX Dark quits" VerticalAlignment="Center" Width="170" />
+                                <ComboBox ItemsSource="{Binding ExitChoices}" SelectedItem="{Binding OnExit}" DisplayMemberPath="Name" />
+                            </DockPanel>
+                            <CheckBox Content="Warn when DX Light is running" IsChecked="{Binding WarnAboutDxLight}" Margin="0,12,0,0" />
+
+                            <TextBlock Text="POWER" Style="{StaticResource StripHeader}" />
+                            <controls:SettingSlider Label="Power limit" Value="{Binding PowerLimit}" Minimum="0.2" Maximum="1" Step="0.01"
+                                                    Scale="100" Format="0" Unit="%" DefaultValue="0.3333"
+                                                    Description="Share of the strip's full-white power it may draw. 33 % matches DX Light." />
+                            <Border Style="{StaticResource WarningCard}" Padding="12,8" Margin="0,4,0,0"
+                                    Visibility="{Binding PowerWarning, Converter={StaticResource BoolToVisibility}}">
+                                <TextBlock TextWrapping="Wrap" FontSize="12.5"
+                                           Text="Above 33 % the strip can draw more current than a USB port is designed to supply." />
+                            </Border>
+
+                            <TextBlock Text="SPEED TEST" Style="{StaticResource StripHeader}" />
+                            <DockPanel>
+                                <Button DockPanel.Dock="Left" Content="Run speed test" Command="{Binding SpeedTestCommand}" Padding="14,6" />
+                                <TextBlock Text="{Binding SpeedTestText}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="12,0,0,0" />
+                            </DockPanel>
+
+                            <TextBlock Text="FILES" Style="{StaticResource StripHeader}" />
+                            <TextBlock Text="{Binding ConfigFilePath}" Style="{StaticResource Caption}" Margin="0,0,0,8" TextWrapping="Wrap" />
+                            <WrapPanel>
+                                <Button Content="Open settings file" Command="{Binding OpenConfigFileCommand}" Margin="0,0,8,8" Padding="14,6" />
+                                <Button Content="Open settings folder" Command="{Binding OpenSettingsFolderCommand}" Margin="0,0,8,8" Padding="14,6" />
+                                <Button Content="Open log" Command="{Binding OpenLogCommand}" Margin="0,0,0,8" Padding="14,6" />
+                            </WrapPanel>
+
+                            <TextBlock Text="ABOUT" Style="{StaticResource StripHeader}" />
+                            <TextBlock>
+                                <Run Text="DX Dark" FontWeight="SemiBold" />
+                                <Run Text="{Binding Version, Mode=OneWay}" />
+                            </TextBlock>
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

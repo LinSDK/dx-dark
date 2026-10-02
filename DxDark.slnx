@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/DxDark.Protocol/DxDark.Protocol.csproj" />
+    <Project Path="src/DxDark.Capture/DxDark.Capture.csproj" />
+    <Project Path="src/DxDark.Core/DxDark.Core.csproj" />
+    <Project Path="src/DxDark.App/DxDark.App.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/DxDark.Cli/DxDark.Cli.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/DxDark.Tests/DxDark.Tests.csproj" />
+  </Folder>
+</Solution>

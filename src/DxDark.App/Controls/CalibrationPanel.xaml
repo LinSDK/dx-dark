@@ -1,0 +1,134 @@
+<UserControl x:Class="DxDark.App.Controls.CalibrationPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DxDark.App.Controls"
+             x:Name="Root">
+    <!-- Zones and LED color. Used in the control panel and over the full-screen test pattern; cards
+         wrap into as many columns as fit (CardWidth). DataContext: CalibrationViewModel. -->
+    <StackPanel>
+        <DockPanel Margin="0,0,8,8">
+            <TextBlock DockPanel.Dock="Right" Text="{Binding LedSummary}" VerticalAlignment="Center" FontSize="12">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SummaryIsWarning}" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+            <TextBlock Text="ZONES" Style="{StaticResource StripHeader}" Margin="0" VerticalAlignment="Center" />
+        </DockPanel>
+
+        <Border Style="{StaticResource InfoCard}" Margin="0,0,8,12">
+            <DockPanel>
+                <TextBlock DockPanel.Dock="Left" Text="&#xE946;" Style="{StaticResource Icon}" FontSize="14" VerticalAlignment="Top"
+                           Foreground="{StaticResource AccentBrush}" Margin="0,1,10,0" />
+                <TextBlock Text="{Binding DetectedText}" TextWrapping="Wrap" FontSize="12.5" />
+            </DockPanel>
+        </Border>
+
+        <TextBlock Text="No zones yet. Add them in order, starting where the cable plugs into the strip."
+                   Style="{StaticResource Caption}" FontSize="12.5" Margin="2,0,8,12"
+                   Visibility="{Binding HasZones, Converter={StaticResource InverseBoolToVisibility}}" />
+
+        <ItemsControl ItemsSource="{Binding Zones}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="{Binding CardWidth, ElementName=Root}" Margin="0,0,8,8" Padding="12,10,8,12" CornerRadius="10"
+                            BorderThickness="1.5" Background="{StaticResource InsetBrush}" Cursor="Hand"
+                            PreviewMouseLeftButtonDown="OnZonePressed">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel>
+                            <DockPanel>
+                                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="10"
+                                        ToolTip="Remove zone" Command="{Binding RemoveCommand}" />
+                                <Border Width="24" Height="24" CornerRadius="12" VerticalAlignment="Center">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                                    <Setter Property="Background" Value="{StaticResource AccentStrongBrush}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding Number}" FontSize="12" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Border>
+                                <ComboBox Margin="10,0,6,0" ItemsSource="{Binding EdgeChoices}" SelectedValuePath="Edge" DisplayMemberPath="Name"
+                                          SelectedValue="{Binding Edge}" ToolTip="Edge of the screen" />
+                            </DockPanel>
+
+                            <controls:SettingSlider Margin="0,10,4,0" Label="LEDs" Value="{Binding LedCount}" Minimum="1" Maximum="{Binding MaxLeds}"
+                                                    Step="1" Format="0" DefaultValue="{Binding DetectedLeds}" ValueWidth="58"
+                                                    Description="LEDs in this zone. The strip lights them while you drag." />
+
+                            <Grid Margin="0,2,4,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="92" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Orientation" Style="{StaticResource Caption}" Margin="0,0,0,4" />
+                                <TextBlock Grid.Column="2" Text="Nudge" Style="{StaticResource Caption}" Margin="0,0,0,4"
+                                           ToolTip="Moves where this zone samples the screen, in LEDs" />
+                                <ComboBox Grid.Row="1" ItemsSource="{Binding OrientationChoices}" SelectedIndex="{Binding OrientationIndex}"
+                                          ToolTip="The direction the red dot runs on the strip" />
+                                <controls:NumberBox Grid.Row="1" Grid.Column="2" Value="{Binding Nudge}" Minimum="-10" Maximum="10" Step="0.5"
+                                                    ToolTip="Moves where this zone samples the screen, in LEDs" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <WrapPanel Margin="0,2,0,0">
+            <Button Command="{Binding AddZoneCommand}" Style="{StaticResource AccentButton}" Margin="0,0,8,8">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE710;" Style="{StaticResource Icon}" FontSize="12" Margin="0,0,8,0" />
+                    <TextBlock Text="Add zone" />
+                </StackPanel>
+            </Button>
+            <Button Content="Remove all" Command="{Binding ClearCommand}" Padding="14,7" Margin="0,0,8,8" />
+        </WrapPanel>
+
+        <TextBlock Text="LED COLOR" Style="{StaticResource StripHeader}" Margin="0,18,0,8" />
+        <WrapPanel>
+            <controls:SettingSlider Width="{Binding CardWidth, ElementName=Root}" Margin="0,0,8,6" Label="Red" Value="{Binding RedGain}"
+                                    Minimum="0" Maximum="1" Step="0.01" Scale="100" Format="0" Unit="%" DefaultValue="1" ValueWidth="64" />
+            <controls:SettingSlider Width="{Binding CardWidth, ElementName=Root}" Margin="0,0,8,6" Label="Green" Value="{Binding GreenGain}"
+                                    Minimum="0" Maximum="1" Step="0.01" Scale="100" Format="0" Unit="%" DefaultValue="1" ValueWidth="64" />
+            <controls:SettingSlider Width="{Binding CardWidth, ElementName=Root}" Margin="0,0,8,6" Label="Blue" Value="{Binding BlueGain}"
+                                    Minimum="0" Maximum="1" Step="0.01" Scale="100" Format="0" Unit="%" DefaultValue="1" ValueWidth="64" />
+            <controls:SettingSlider Width="{Binding CardWidth, ElementName=Root}" Margin="0,0,8,6" Label="Strip brightness" Value="{Binding StripBrightness}"
+                                    Minimum="0.02" Maximum="1" Step="0.01" Scale="100" Format="0" Unit="%" DefaultValue="1" ValueWidth="64"
+                                    Description="The strip's own brightness, applied on top of the preset's brightness." />
+            <DockPanel Width="{Binding CardWidth, ElementName=Root}" Margin="0,2,8,6">
+                <ComboBox DockPanel.Dock="Right" Width="110" ItemsSource="{Binding ColorOrders}" SelectedItem="{Binding ColorOrder}" />
+                <TextBlock Text="Color order" VerticalAlignment="Center" ToolTip="For strips wired in a different channel order than red, green, blue" />
+            </DockPanel>
+        </WrapPanel>
+    </StackPanel>
+</UserControl>

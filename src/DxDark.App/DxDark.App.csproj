@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The tray app with its control panel. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <AssemblyName>DXDark</AssemblyName>
+    <RootNamespace>DxDark.App</RootNamespace>
+    <ApplicationIcon>Assets\DxDark.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- WPF0001: WPF's Fluent theme (Application.ThemeMode) is still flagged as experimental.
+         WFO0003: Windows Forms (tray icon only) prefers its own DPI setting; the manifest is what WPF needs. -->
+    <NoWarn>$(NoWarn);WPF0001;WFO0003</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Windows Forms is only used for the tray icon; keep its names out of WPF code. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\DxDark.ico" />
+    <Resource Include="Assets\DxDark-256.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DxDark.Core\DxDark.Core.csproj" />
+  </ItemGroup>
+
+</Project>

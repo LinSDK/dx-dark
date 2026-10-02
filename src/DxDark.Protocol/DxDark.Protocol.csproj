@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- USB HID transport and packet format for the light strip controller. No third-party dependencies. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="DxDark.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,78 @@
+<Window x:Class="DxDark.App.Views.CalibrationWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DxDark.App.Controls"
+        Title="DX Dark test pattern"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        WindowStartupLocation="Manual"
+        Topmost="True"
+        ShowInTaskbar="False"
+        Background="Black"
+        Foreground="{StaticResource TextBrush}">
+    <Grid x:Name="Root">
+        <controls:CalibrationCanvas x:Name="Canvas" />
+
+        <!-- The strip samples only the screen edges, so the controls in the middle are never picked up. -->
+        <Border x:Name="Panel" Width="940" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="#F2161A21" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1"
+                CornerRadius="14" Padding="26,20,18,10">
+            <DockPanel>
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,8,14">
+                    <Button DockPanel.Dock="Right" Content="Done" Style="{StaticResource AccentButton}" Click="OnDone" />
+                    <TextBlock Text="Test pattern" Style="{StaticResource Title}" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,8,8">
+                    <controls:SettingSlider DockPanel.Dock="Right" Width="210" Margin="20,0,0,0" Label="Speed"
+                                            Value="{Binding PatternSpeed}" Minimum="0.1" Maximum="4" Step="0.1"
+                                            Format="0.0" Unit="×" DefaultValue="1" ValueWidth="62" />
+                    <ListBox ItemsSource="{Binding Patterns}" SelectedItem="{Binding SelectedPattern}" Background="Transparent" BorderThickness="0"
+                             VerticalAlignment="Center" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Cursor" Value="Hand" />
+                                <Setter Property="Foreground" Value="{StaticResource TextSecondaryBrush}" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd" Background="{StaticResource CardBrush}" BorderBrush="{StaticResource CardBorderBrush}"
+                                                    BorderThickness="1" CornerRadius="8" Padding="13,7" Margin="0,0,6,6">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource CardHoverBrush}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                </Trigger>
+                                                <Trigger Property="IsSelected" Value="True">
+                                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentSoftBrush}" />
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                                    <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,8,0,8">
+                    <controls:CalibrationPanel CardWidth="284" />
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

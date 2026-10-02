@@ -1,0 +1,41 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- DX Dark is always dark: the control panel sits next to a screen you are lighting. -->
+    <SolidColorBrush x:Key="WindowBrush" Color="#101217" />
+    <SolidColorBrush x:Key="SidebarBrush" Color="#14171D" />
+    <SolidColorBrush x:Key="CardBrush" Color="#1A1E26" />
+    <SolidColorBrush x:Key="CardHoverBrush" Color="#222733" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#282D39" />
+    <SolidColorBrush x:Key="InsetBrush" Color="#0B0D11" />
+    <SolidColorBrush x:Key="TextBrush" Color="#E9ECF2" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#9CA5B5" />
+    <SolidColorBrush x:Key="TextTertiaryBrush" Color="#6C7484" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#8B7CFF" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#262148" />
+    <SolidColorBrush x:Key="AccentStrongBrush" Color="#6B5CE7" />
+    <SolidColorBrush x:Key="DangerStrongBrush" Color="#C94848" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#41D18E" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#F2B84B" />
+    <SolidColorBrush x:Key="WarningSoftBrush" Color="#2E2614" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#F06A6A" />
+    <SolidColorBrush x:Key="IdleBrush" Color="#6C7484" />
+
+    <LinearGradientBrush x:Key="GlowBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#34D2F2" Offset="0" />
+        <GradientStop Color="#8B6CFF" Offset="0.5" />
+        <GradientStop Color="#FF4FA3" Offset="1" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="HueBrush" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#FF0000" Offset="0" />
+        <GradientStop Color="#FFFF00" Offset="0.1667" />
+        <GradientStop Color="#00FF00" Offset="0.3333" />
+        <GradientStop Color="#00FFFF" Offset="0.5" />
+        <GradientStop Color="#0000FF" Offset="0.6667" />
+        <GradientStop Color="#FF00FF" Offset="0.8333" />
+        <GradientStop Color="#FF0000" Offset="1" />
+    </LinearGradientBrush>
+
+    <FontFamily x:Key="IconFont">Segoe Fluent Icons, Segoe MDL2 Assets</FontFamily>
+</ResourceDictionary>
