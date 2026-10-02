@@ -1,6 +1,6 @@
 # DX Dark
 
-An replacement for the **DX Light** app that drives an ambilight light strip setup.
+A replacement for the **DX Light** app that drives an ambilight light strip setup.
 
 DX Dark is a Windows tray app that improves upon the barebones driver provided by the original manufacturer.
 
