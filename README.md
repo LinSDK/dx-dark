@@ -8,14 +8,11 @@ DX Dark is a Windows tray app that improves upon the barebones driver provided b
 
 ![The Lighting page: live view in the middle, preset settings on the right](docs/screenshots/lighting.png)
 
-*Screenshots are made by DX Dark's own snapshot mode from a built-in test picture.*
-
 ## Contents
 
 - [Why it exists](#why-it-exists)
 - [Features](#features)
 - [Getting started](#getting-started)
-- [The control panel](#the-control-panel)
 - [Effects and your own videos](#effects-and-your-own-videos)
 - [Calibration](#calibration)
 - [Preset settings explained](#preset-settings-explained)
@@ -100,31 +97,6 @@ To check the download, compare its checksum with `Releases\v0.3.1\SHA256SUMS-v0.
 Get-FileHash .\DXDark-v0.3.1.exe -Algorithm SHA256
 ```
 
-## The control panel
-
-| Area | What it does |
-|---|---|
-| **Screen / Effect / Off** | What the strip shows. |
-| **Live view** | The picture being sampled, with the preset's color processing applied, each LED's sampling zone (toggle with the grid button), and the color going to every LED. |
-| **Effect gallery** | Appears in Effect mode, on Lighting and on Calibration: built-in effects, your videos, **Add video**, speed and (for Solid color and Pulse) the color. |
-| **Preset strip** (right, on Lighting) | The preset dropdown at the top, **save preset** next to it (keep the name to overwrite the current preset, after a confirmation, or type a new name to save a new one), and **⋯** for rename, reset, delete, import and export. Below, in their own sections: Capture, Motion, Light, Color and Filter. Changes save automatically to the selected preset. |
-| **Calibration** (sidebar) | Swaps the preset strip for the test pattern controls, the preset, the zones and LED color, next to the live view, where each zone's area can be dragged and resized. A warning sign appears here (and on the live view) while no zones are set. |
-| **Settings** (sidebar) | Startup, lock/sleep behavior, what happens on quit, power limit, speed test, and the settings file. |
-| **Connected card** (sidebar) | Strip status with its LED and zone count ("110 LEDs · 4 zones"); click it for model, firmware, kit size and device ID. |
-
-**Tray icon:** double-click opens the control panel; right-click opens the menu. Full color means
-the strip is lit, dimmed that it is off or paused, grey that no strip is connected.
-
-Questions, names and file choices (saving a preset, adding a video…) open in DX Dark's own dark
-dialogs rather than Windows' light ones.
-
-![A DX Dark dialog](docs/screenshots/dialog.png)
-
-![The Settings sheet](docs/screenshots/settings.png)
-
-**The strip's buttons:** pressing Power, M or the music button hands control to the strip
-(DX Dark stops sending, exactly like DX Light). Pick Screen or Effect in DX Dark to take over again.
-
 ## Effects and your own videos
 
 An effect is a picture that changes over time; DX Dark samples its edges with your zones and
@@ -136,30 +108,6 @@ and the live view shows exactly what is being sampled.
 Built in:
 
 ![All built-in effects](docs/screenshots/effects.png)
-
-| Effect | What it looks like |
-|---|---|
-| Rainbow spin | A rainbow turning around the middle of the screen. |
-| Rainbow sweep | Rainbow bands travelling sideways along the top and bottom. |
-| Rainbow rise | Rainbow bands travelling upwards along the sides. |
-| Spectrum | The whole strip fading slowly through every color. |
-| Aurora | Green and violet curtains drifting over a night sky. |
-| Ocean | Deep blue water with moving light. |
-| Lava | Slow, glowing red and orange blobs. |
-| Fire | Flames licking up from the bottom. |
-| Sunset | Violet above, pink and orange below, gently drifting. |
-| Neon | Magenta and cyan glows circling each other. |
-| Plasma | Flowing bands of color. |
-| Comet | A bright comet with a glowing tail circling the screen. |
-| Starlight | A night sky of softly twinkling stars. |
-| Thunderstorm | Dark, drifting clouds lit now and then by lightning. |
-| Forest | Deep greens with patches of sunlight drifting through swaying leaves. |
-| Ripple | Rings of color spreading out from the middle of the screen. |
-| Digital rain | Green streaks falling down the screen. |
-| Pulse | Your color, slowly breathing. |
-| Solid color | Your color. |
-
-**Speed** changes how fast an effect plays.
 
 **Add video** turns any video into an effect. DX Dark checks that Windows can play it and copies
 it into its library (`%APPDATA%\DX Dark\Videos`), so the original can be moved or deleted. It plays
@@ -270,12 +218,8 @@ Hover a setting's name for a short explanation; double-click it, or use ↺, to 
 
 ## The settings file
 
-Everything DX Dark remembers is in one text file, `%APPDATA%\DX Dark\DXDark.ini` (Settings →
-**Open settings file** opens it in Notepad). DX Dark saves every change there half a second after
-you make it. You can also edit the file yourself while DX Dark runs: it reloads the file as soon
-as you save it.
-
-Values use the same units as the control panel, so they read the way they look on screen:
+The changes made in the application are stored in a config file, `%APPDATA%\DX Dark\DXDark.ini` (Settings →
+**Open settings file** opens it in Notepad). DX Dark saves the changes automatically.
 
 ```ini
 [General]
@@ -340,7 +284,7 @@ DX Light's Bluetooth dongle, keyboards and mice are not supported.
 
 ## Privacy
 
-- **No network access at all.** No accounts, telemetry, crash reporting, update checks or
+- **No network access.** No accounts, telemetry, crash reporting, update checks or
   feedback uploads. There is no networking code in the project.
 - Talks only to the strip, through Windows' own HID API (`hid.dll`, `setupapi.dll`); no drivers
   are installed.
