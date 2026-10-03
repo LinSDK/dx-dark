@@ -6,6 +6,10 @@ DX Dark is a Windows tray app that improves upon the barebones driver provided b
 
 ![DX Dark icon](src/DxDark.App/Assets/DxDark-256.png)
 
+![The Lighting page: live view in the middle, preset settings on the right](docs/screenshots/lighting.png)
+
+*Screenshots are made by DX Dark's own snapshot mode from a built-in test picture.*
+
 ## Contents
 
 - [Why it exists](#why-it-exists)
@@ -53,12 +57,18 @@ threshold, which causes abrupt, flickery jumps when objects move across the scre
   strip beside it. Every slider edits the live view as you move it.
 - **Presets** (Balanced, Cinema, Gaming, Vivid, Soft ambience, Faithful), fully editable; save
   your own with one click, plus rename / delete / reset / import / export.
+- **Filters** in the Soft Ambience style: blur, pixelate, hue shift, posterize and invert, applied
+  to the picture before it is sampled.
+- **Black bars handled smoothly**: letterbox and pillarbox bars are detected, kept through fades to
+  black, and when they appear or go the LEDs fade over to the new picture area instead of jumping.
 - **Effects in the Soft Ambience style**: an effect is a moving picture that the strip samples
   exactly like the screen. Nineteen are built in (rainbows that spin, sweep sideways or rise,
   fire, a forest, ripples, digital rain, a thunderstorm and more), and **you can add your own videos**.
 - **Calibration in the control panel**: set up the zones while your own picture stays on the
   screen. The selected zone shows on the strip as a red dot running from its first LED to its
-  last, so you can see which way it runs. A full-screen test pattern is there when you want it.
+  last, so you can see which way it runs. You choose exactly which part of the screen each zone
+  samples by dragging and resizing its area in the live view, separately for each preset. A test
+  pattern can be shown behind the control panel when you want one.
 - **All settings in one plain text file** (`DXDark.ini`) that you can open, back up or edit by
   hand; DX Dark picks up your edits as soon as you save. Nothing goes in the registry, and
   entries earlier versions left there are removed.
@@ -71,7 +81,7 @@ threshold, which causes abrupt, flickery jumps when objects move across the scre
 
 1. **Close DX Light** and turn off its start-at-login (or uninstall it). Two apps driving the
    strip at once will fight.
-2. Copy `Releases\v0.1.2\DXDark-v0.1.2.exe` anywhere you like and run it. Nothing to install:
+2. Copy `Releases\v0.3.1\DXDark-v0.3.1.exe` anywhere you like and run it. Nothing to install:
    the .NET runtime is built in. Windows SmartScreen may warn about an unknown publisher the
    first time, because the file is not code-signed.
 3. The first time, DX Dark has no zones and opens on **Calibration**. It shows how many LEDs it
@@ -84,10 +94,10 @@ Closing the window keeps DX Dark running in the tray; double-click the tray icon
 and use **Quit DX Dark** in its menu to exit. Running the exe again just reopens the control
 panel. Settings, zones and presets from earlier versions are kept.
 
-To check the download, compare its checksum with `Releases\v0.1.2\SHA256SUMS-v0.1.2.txt`:
+To check the download, compare its checksum with `Releases\v0.3.1\SHA256SUMS-v0.3.1.txt`:
 
 ```powershell
-Get-FileHash .\DXDark-v0.1.2.exe -Algorithm SHA256
+Get-FileHash .\DXDark-v0.3.1.exe -Algorithm SHA256
 ```
 
 ## The control panel
@@ -97,8 +107,8 @@ Get-FileHash .\DXDark-v0.1.2.exe -Algorithm SHA256
 | **Screen / Effect / Off** | What the strip shows. |
 | **Live view** | The picture being sampled, with the preset's color processing applied, each LED's sampling zone (toggle with the grid button), and the color going to every LED. |
 | **Effect gallery** | Appears in Effect mode, on Lighting and on Calibration: built-in effects, your videos, **Add video**, speed and (for Solid color and Pulse) the color. |
-| **Preset strip** (right, on Lighting) | The preset dropdown at the top, **save as new preset** next to it, and **⋯** for rename, reset, delete, import and export. Below, in their own sections: Capture, Motion, Light and Color. Changes save automatically to the selected preset. |
-| **Calibration** (sidebar) | Swaps the preset strip for the zones and LED color, next to the live view. A warning sign appears here (and on the live view) while no zones are set. |
+| **Preset strip** (right, on Lighting) | The preset dropdown at the top, **save preset** next to it (keep the name to overwrite the current preset, after a confirmation, or type a new name to save a new one), and **⋯** for rename, reset, delete, import and export. Below, in their own sections: Capture, Motion, Light, Color and Filter. Changes save automatically to the selected preset. |
+| **Calibration** (sidebar) | Swaps the preset strip for the test pattern controls, the preset, the zones and LED color, next to the live view, where each zone's area can be dragged and resized. A warning sign appears here (and on the live view) while no zones are set. |
 | **Settings** (sidebar) | Startup, lock/sleep behavior, what happens on quit, power limit, speed test, and the settings file. |
 | **Connected card** (sidebar) | Strip status with its LED and zone count ("110 LEDs · 4 zones"); click it for model, firmware, kit size and device ID. |
 
@@ -108,16 +118,24 @@ the strip is lit, dimmed that it is off or paused, grey that no strip is connect
 Questions, names and file choices (saving a preset, adding a video…) open in DX Dark's own dark
 dialogs rather than Windows' light ones.
 
+![A DX Dark dialog](docs/screenshots/dialog.png)
+
+![The Settings sheet](docs/screenshots/settings.png)
+
 **The strip's buttons:** pressing Power, M or the music button hands control to the strip
 (DX Dark stops sending, exactly like DX Light). Pick Screen or Effect in DX Dark to take over again.
 
 ## Effects and your own videos
 
 An effect is a picture that changes over time; DX Dark samples its edges with your zones and
-preset, just like the screen. That means presets, nudges and white balance apply to effects too,
+preset, just like the screen. That means presets, zone areas and white balance apply to effects too,
 and the live view shows exactly what is being sampled.
 
+![The Lighting page in Effect mode, with the effect gallery below the live view](docs/screenshots/effect.png)
+
 Built in:
+
+![All built-in effects](docs/screenshots/effects.png)
 
 | Effect | What it looks like |
 |---|---|
@@ -155,6 +173,8 @@ Calibration is a page of the control panel: the zones and LED color replace the 
 next to the live view, while the strip keeps showing your screen (or effect). That way you can
 adjust everything against whatever is already on the screen.
 
+![The Calibration page with the second zone selected; its red dot shows in the live view](docs/screenshots/calibration.png)
+
 **Zones** are the parts of the strip along each edge of the screen, in order from the end where
 the cable plugs in. The note at the top says how many LEDs DX Dark detected and how many belong
 on each side; use it as a guide for the LED counts.
@@ -171,31 +191,60 @@ on each side; use it as a guide for the LED counts.
   bottom or bottom to top. The dot in the live view runs the way the orientation says, so the
   two should match.
 - **Edge**: which side of the screen the zone is on.
-- **Nudge**: moves where the zone samples the screen, in steps of half an LED, for a strip
-  mounted a little off. Type a number or use the arrows.
+- **Zone overlap**: how much each LED's slice of the zone's area overlaps its neighbors. More
+  overlap gives softer transitions.
+- **↺** on the card puts the zone's area back to the whole edge.
 - **Click a zone** to select it, and click it again (or anywhere else) to deselect it; ✕ removes it.
 
-The selected zone is outlined in the live view. While no zones are set the strip stays dark, and
-a small warning says so.
+**Zone areas.** On the Calibration page the live view shows the part of the screen each zone
+samples as a numbered rectangle. Its LEDs share the area out along their edge, in order, so an
+area can be shorter than the edge (to skip a corner or a taskbar) or deeper into the picture.
+
+- Click a zone's area (or its card) to select it; it turns purple and gets handles.
+- Drag the area to move it, or drag a handle to resize it. The strip follows as you drag.
+- With a zone selected, the arrow keys move its area in small steps (Shift for bigger steps).
+- Click the selected area again, or anywhere outside the zones, to deselect it.
+- Areas may reach a little past the edge of the picture, for a strip mounted a bit off; sampling
+  stops at the picture's edge. Black bars are left out, as on the Lighting page.
+
+Areas and overlap are saved **in the preset** chosen at the top of the page (the same preset as on
+the Lighting page), so for example Cinema can sample deeper into the picture than Gaming. A zone
+without an area of its own uses the whole edge, as deep as the preset's usual depth. Saving a
+preset under a new name copies its areas; **Reset to defaults** puts them back to the whole edge.
+
+While no zones are set the strip stays dark, and a small warning says so.
 
 **LED color:** red, green and blue gains for white balance, the strip's own **Strip brightness**
 (applied on top of each preset's brightness), and the channel order, for strips wired differently
 from RGB.
 
-**Show test pattern** fills the synced monitor with a test pattern, with the same zone and LED
-color controls floating in the middle. The strip never samples the middle (zones stay within the
-outer 15 % of the screen while the pattern is shown, and black-bar detection is off), so every
-change shows on the strip immediately. Patterns: spinning **cross**, **colored arms** (red, green, blue, yellow in order),
-**edges** (left red, top green, right blue, bottom yellow), border **chase**, color **cycle** and
-**white** (for white balance), with adjustable speed. Press **Done** or Esc to close it.
+**Test pattern** (at the top of the Calibration page) shows a test pattern on the synced monitor,
+behind the control panel, so you keep using the same controls. Pick the pattern in the dropdown
+next to it (picking one also shows it); **Pattern speed** appears while it shows. The strip never
+samples the middle of the screen (zones stay within the outer 15 % while the pattern shows, and
+black-bar detection is off). If the control panel is maximized or reaches into the edges, DX Dark
+moves it to the middle of that screen, and puts it back when the pattern goes. Press the button
+again or Esc to hide the pattern; leaving Calibration hides it too.
+
+![A test pattern behind the control panel](docs/screenshots/test-pattern.png)
+
+| Pattern | Use |
+|---|---|
+| Cross | A cross that turns and changes color: every LED should follow it smoothly. |
+| Colored arms | Red, green, blue and yellow arms around a black center: shows the direction the strip runs. |
+| Edges | Left red, top green, right blue, bottom yellow: checks the edge of each zone. |
+| Chase | A block running clockwise around the border and through every color. |
+| Cycle | The whole screen fading through every color. |
+| White | For white balance (the LED color gains). |
+| Rainbow ring | Every hue around the screen: checks that zones join up at the corners. |
+
+![The test patterns](docs/screenshots/test-patterns.png)
 
 ## Preset settings explained
 
 | Setting | What it does |
 |---|---|
 | Updates per second | How often the strip is updated (default 60). |
-| Sampling depth | How far into the picture each LED looks. Deeper is calmer. |
-| Zone overlap | How much each LED's zone overlaps its neighbors. More overlap gives softer transitions. |
 | Color focus | 0 % averages the zone; higher values let vivid colors win over grey and black. |
 | Ignore black bars | Detects letterbox and pillarbox bars and samples the picture inside them. |
 | Smoothing | Fade time in milliseconds. Higher is calmer, lower reacts faster. |
@@ -206,6 +255,16 @@ change shows on the strip immediately. Patterns: spinning **cross**, **colored a
 | Gamma | 1.00 sends the picture as-is (like DX Light); higher values deepen mid-tones. |
 | Temperature | 6500 K is neutral; lower is warmer, higher is cooler. |
 | Black threshold | Very dark parts of the picture fade the LEDs out smoothly instead of looking muddy. |
+| Blur | Gaussian blur of the picture before it is sampled, as a share of its height. |
+| Pixelate | Turns the picture into blocks of this size. |
+| Hue shift | Turns every color around the color wheel (in degrees). |
+| Posterize | Reduces each color channel to this many levels (0 is off). |
+| Invert colors | Swaps every color for its opposite. |
+
+Each preset also keeps the area and overlap of every zone, set on the Calibration page. The
+filters change the picture itself, so the live view shows them too:
+
+![The Filter section with a blur and a hue shift applied](docs/screenshots/filter.png)
 
 Hover a setting's name for a short explanation; double-click it, or use ↺, to reset it.
 
@@ -233,16 +292,22 @@ ColorOrder = RGB
 Edge = Right
 LEDs = 20
 Orientation = BottomToTop
-Nudge = -4
 
 [Preset 1]
 Name = Cinema
 SamplingDepth = 18%
+ZoneOverlap = 100%
 Smoothing = 320 ms
 Temperature = 6000 K
+Blur = 2%
+HueShift = 0 deg
+Posterize = Off
+Zone1Area = x 92.5%, y -20%, width 7.5%, height 100%, overlap 60%
 ```
 
-Short comments in the file list the choices for each setting. Values that are missing or out of
+`ZoneNArea` is the area zone N samples in that preset, measured from the top-left of the picture;
+`SamplingDepth` and `ZoneOverlap` are the usual area for zones without one. Short comments in
+the file list the choices for each setting. Values that are missing or out of
 range fall back to their defaults, and lines starting with `;` are ignored. Exported presets use
 the same format (`.ini`); presets exported by 0.0.1–0.0.2 (`.json`) can still be imported.
 
@@ -305,9 +370,10 @@ DX Dark from the tray, then delete the exe and the `%APPDATA%\DX Dark` folder.
 | Lights flicker or two apps seem to fight | Make sure DX Light is closed (DX Dark warns when it sees it running). |
 | The strip stays dark | No zones are set yet (a warning shows on the live view): open Calibration and add them. |
 | A side shows the wrong colors | Calibration → click the zone, watch the red dot, and set its edge and orientation to match. |
-| Colors are a few LEDs off along a side | Calibration → that zone's Nudge. |
+| Colors are a few LEDs off along a side | Calibration → select the zone and move its area in the live view (or with the arrow keys). |
 | Red looks green or blue | Calibration → LED color → Color order. |
-| Whites look tinted | Calibration → Show test pattern → White, then adjust the red/green/blue gains. |
+| Whites look tinted | Calibration → Test pattern → White, then adjust the red/green/blue gains. |
+| The top and bottom LEDs go dark during letterboxed movies | Make sure Ignore black bars is on in the preset. Bars are kept through fades to black; when they are found again after a scene change, the LEDs fade over in under a second. |
 | Everything looks dim | Check Strip brightness (Calibration → LED color) and the preset's Brightness. |
 | An edit to DXDark.ini didn't apply | The file needs its `[General]` section; the log says "reloading it" when an edit is picked up. |
 | A video won't add | Windows can't decode it (common for WebM/VP9, or HEVC without the extension). Convert it to H.264 MP4. |
@@ -323,7 +389,10 @@ Screen (Desktop Duplication, averaged on the GPU to 320–480 pixels wide)
   or effect (drawn in code, 192×108)  or video (Media Foundation, decoded at ~320 wide)
         │
         ▼
-Black-bar detection ─► one sampling zone per LED (depth, overlap, nudge) ─► zone averages
+Black-bar detection (fading over when bars appear or go) ─► filters (blur, pixelate, hue, posterize, invert)
+        │
+        ▼
+One sampling zone per LED (its share of its zone's area, plus overlap) ─► zone averages
         │                                       (summed-area tables: any zone size costs the same)
         ▼
 Black threshold ─► neighbor blending ─► time-based smoothing ─► saturation / vibrance /
@@ -388,7 +457,7 @@ The version lives in `Directory.Build.props`; each release goes into its own fol
 `..\Releases\v<version>\`. The app icon is generated by `tools/make-icon.ps1`.
 
 Developer aid: `DXDark.exe --snapshot <folder>` renders the main window states, the calibration
-page, the test pattern screen, the dialogs and file picker, every effect and every test pattern
+page, the test pattern behind the control panel, the dialogs and file picker, every effect and every test pattern
 to PNG files using a synthetic image. It does not touch the strip or capture the screen.
 
 ## Project layout
@@ -399,7 +468,7 @@ DX Dark/
 │  ├─ DxDark.Protocol/   USB HID transport and packet format (no dependencies)
 │  ├─ DxDark.Capture/    screen capture (Desktop Duplication) and video decoding (Media Foundation)
 │  ├─ DxDark.Core/       zones, effects, analysis, color pipeline, sync engine, settings, controller
-│  └─ DxDark.App/        WPF control panel, calibration screen and tray icon (DXDark.exe)
+│  └─ DxDark.App/        WPF control panel, test pattern window and tray icon (DXDark.exe)
 ├─ tools/
 │  ├─ DxDark.Cli/        dxdark-cli: low-level test tool
 │  └─ make-icon.ps1      generates the app icon
@@ -434,6 +503,38 @@ dxdark-cli capture-test         # measure screen capture speed
 - Writing a new LED count into the strip is deliberately not offered; the factory value is used.
 
 ## Changelog
+
+### 0.3.1
+
+- Save preset offers the current preset's name. Keeping it asks whether to overwrite the current
+  preset; typing the name of another preset asks whether to overwrite that one; a new name saves a
+  new preset.
+
+### 0.3.0
+
+- Zone areas: on the Calibration page each zone's area is drawn on the live view and can be
+  dragged, resized and moved with the arrow keys, to choose exactly which part of the screen it
+  samples. Areas and overlap are saved per preset, with a preset choice on the Calibration page.
+  This replaces Nudge and the per-zone sampling depth; earlier nudges and depths were converted
+  into areas in every preset.
+- Sampling depth and Zone overlap were removed from the Lighting page.
+- The Stripes and Gray steps test patterns were removed.
+- The STE version of this README was removed.
+
+### 0.2.0
+
+- Black bars: dark and fading scenes no longer make DX Dark forget the bars, so the top and
+  bottom no longer go dark after a fade to black. When bars appear or go, the LEDs fade over to
+  the new picture area in 0.7 s instead of jumping.
+- Sampling depth and Zone overlap can be set per zone in Calibration; zones follow the preset
+  until changed.
+- The test pattern now shows behind the control panel instead of in its own screen: a Test
+  pattern button with a pattern dropdown at the top of Calibration, and Pattern speed while it
+  shows. DX Dark moves the control panel clear of the screen edges while the pattern shows.
+- New test patterns: Rainbow ring, Stripes and Gray steps. Colored arms has its black center
+  again, and the Chase block now runs through every color.
+- New Filter section in the preset strip: Blur, Pixelate, Hue shift, Posterize and Invert colors.
+- Screenshots in the README.
 
 ### 0.1.2
 

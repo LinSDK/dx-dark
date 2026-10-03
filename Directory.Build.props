@@ -8,7 +8,7 @@
     <PlatformTarget>x64</PlatformTarget>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
-    <Version>0.1.2</Version>
+    <Version>0.3.1</Version>
     <Product>DX Dark</Product>
     <Company>DX Dark</Company>
     <Description>Private, offline controller for DX Light screen-sync LED strips.</Description>
