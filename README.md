@@ -22,7 +22,7 @@ DX Dark is a Windows tray app that improves upon the barebones driver provided b
 - [The settings file](#the-settings-file)
 - [Supported hardware](#supported-hardware)
 - [Privacy](#privacy)
-- [Troubleshooting](#troubleshooting)v
+- [Troubleshooting](#troubleshooting)
 - [How it works](#how-it-works)
 - [What we learned about the strip](#what-we-learned-about-the-strip)
 - [Building from source](#building-from-source)
