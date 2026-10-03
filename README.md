@@ -50,29 +50,14 @@ threshold, which causes abrupt, flickery jumps when objects move across the scre
 - **Works the same at any refresh rate** (30, 60, 144, 240 Hz…): capture follows the monitor,
   updates go to the strip at a fixed rate (default 60 per second), and fades are timed in
   milliseconds rather than frames.
-- **One-page control panel**: the live view is always visible, with the preset settings in a
-  strip beside it. Every slider edits the live view as you move it.
-- **Presets** (Balanced, Cinema, Gaming, Vivid, Soft ambience, Faithful), fully editable; save
-  your own with one click, plus rename / delete / reset / import / export.
-- **Filters** in the Soft Ambience style: blur, pixelate, hue shift, posterize and invert, applied
+- **Presets** (Balanced, Cinema, Gaming, Vivid, Soft ambience, Faithful), Save your own configuration settings.
+- **Filters** Blur, pixelate, hue shift, posterize and invert, applied
   to the picture before it is sampled.
 - **Black bars handled smoothly**: letterbox and pillarbox bars are detected, kept through fades to
   black, and when they appear or go the LEDs fade over to the new picture area instead of jumping.
-- **Effects in the Soft Ambience style**: an effect is a moving picture that the strip samples
-  exactly like the screen. Nineteen are built in (rainbows that spin, sweep sideways or rise,
-  fire, a forest, ripples, digital rain, a thunderstorm and more), and **you can add your own videos**.
-- **Calibration in the control panel**: set up the zones while your own picture stays on the
-  screen. The selected zone shows on the strip as a red dot running from its first LED to its
-  last, so you can see which way it runs. You choose exactly which part of the screen each zone
-  samples by dragging and resizing its area in the live view, separately for each preset. A test
-  pattern can be shown behind the control panel when you want one.
-- **All settings in one plain text file** (`DXDark.ini`) that you can open, back up or edit by
-  hand; DX Dark picks up your edits as soon as you save. Nothing goes in the registry, and
-  entries earlier versions left there are removed.
-- **Tray menu** for everyday use: screen, effects, off, presets, brightness, calibration.
-- Lights off automatically while the PC is **locked**, **asleep** or the **display is off**.
-- Reconnects automatically when the strip is unplugged and plugged back in.
-- Optional start with Windows (a shortcut in your Startup folder; no administrator rights).
+- **Effects**: an effect is a moving picture that the strip samples exactly like the screen. You can add your own videos as an effect.
+- **Calibration**: The lightstrip can be calibrated in the Calibration tab. You can use the test patterns.
+- **Tray menu** Quick access to the application in the Windows system tray.
 
 ## Getting started
 
