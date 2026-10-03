@@ -28,14 +28,25 @@ public partial class MainWindow : Window
         {
             new NavItem("lighting", "Lighting", ""),
             new NavItem("calibration", "Calibration", ""),
+            new NavItem("shortcuts", "Shortcuts", ""),
         };
-        Nav.SelectedIndex = vm.IsCalibrationPage ? 1 : 0;
-        Nav.SelectionChanged += (_, _) => _vm.IsCalibrationPage = Nav.SelectedItem is NavItem { Key: "calibration" };
+        Nav.SelectedIndex = NavIndex();
+        Nav.SelectionChanged += (_, _) =>
+        {
+            string key = (Nav.SelectedItem as NavItem)?.Key ?? "lighting";
+            _vm.IsCalibrationPage = key == "calibration";
+            _vm.IsShortcutsPage = key == "shortcuts";
+        };
         vm.PropertyChanged += (_, e) =>
         {
+            if (e.PropertyName == nameof(MainViewModel.IsShortcutsPage))
+            {
+                Nav.SelectedIndex = NavIndex();
+            }
+
             if (e.PropertyName == nameof(MainViewModel.IsCalibrationPage))
             {
-                Nav.SelectedIndex = vm.IsCalibrationPage ? 1 : 0;
+                Nav.SelectedIndex = NavIndex();
                 UpdateHighlight();
                 Surface.AreaProvider = vm.IsCalibrationPage ? vm.Calibration.AreasFor : null;
             }
@@ -147,6 +158,8 @@ public partial class MainWindow : Window
     }
 
     private void OnPreview(PreviewSnapshot snapshot) => Surface.Update(snapshot);
+
+    private int NavIndex() => _vm.IsCalibrationPage ? 1 : _vm.IsShortcutsPage ? 2 : 0;
 
     private static bool InTextInput() =>
         Keyboard.FocusedElement is TextBox or ComboBox or ComboBoxItem or Slider;

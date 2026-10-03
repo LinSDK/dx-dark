@@ -16,6 +16,7 @@ DX Dark is a Windows tray app that improves upon the barebones driver provided b
 - [Effects and your own videos](#effects-and-your-own-videos)
 - [Calibration](#calibration)
 - [Preset settings explained](#preset-settings-explained)
+- [Keyboard shortcuts](#keyboard-shortcuts)
 - [The settings file](#the-settings-file)
 - [Supported hardware](#supported-hardware)
 - [Privacy](#privacy)
@@ -58,12 +59,14 @@ threshold, which causes abrupt, flickery jumps when objects move across the scre
 - **Effects**: an effect is a moving picture that the strip samples exactly like the screen. You can add your own videos as an effect.
 - **Calibration**: The lightstrip can be calibrated in the Calibration tab. You can use the test patterns.
 - **Tray menu** Quick access to the application in the Windows system tray.
+- **Keyboard shortcuts** that work in any program: lights on/off, next effect, next preset,
+  brightness and the control panel, each with keys you choose.
 
 ## Getting started
 
 1. **Close DX Light** and turn off its start-at-login (or uninstall it). Two apps driving the
    strip at once will fight.
-2. Copy `Releases\v0.3.1\DXDark-v0.3.1.exe` anywhere you like and run it. Nothing to install:
+2. Copy `Releases\v0.3.2\DXDark-v0.3.2.exe` anywhere you like and run it. Nothing to install:
    the .NET runtime is built in. Windows SmartScreen may warn about an unknown publisher the
    first time, because the file is not code-signed.
 3. The first time, DX Dark has no zones and opens on **Calibration**. It shows how many LEDs it
@@ -76,10 +79,10 @@ Closing the window keeps DX Dark running in the tray; double-click the tray icon
 and use **Quit DX Dark** in its menu to exit. Running the exe again just reopens the control
 panel. Settings, zones and presets from earlier versions are kept.
 
-To check the download, compare its checksum with `Releases\v0.3.1\SHA256SUMS-v0.3.1.txt`:
+To check the download, compare its checksum with `Releases\v0.3.2\SHA256SUMS-v0.3.2.txt`:
 
 ```powershell
-Get-FileHash .\DXDark-v0.3.1.exe -Algorithm SHA256
+Get-FileHash .\DXDark-v0.3.2.exe -Algorithm SHA256
 ```
 
 ## Effects and your own videos
@@ -201,6 +204,25 @@ filters change the picture itself, so the live view shows them too:
 
 Hover a setting's name for a short explanation; double-click it, or use ↺, to reset it.
 
+## Keyboard shortcuts
+
+These work in any program, as long as DX Dark is running (also from the tray):
+
+| Shortcut | Default keys | What it does |
+|---|---|---|
+| Light on/off | Alt+F1 | Turns the strip off, or back on in the mode it had (screen or effect). |
+| Next effect / screen | Alt+F2 | Screen → each effect in gallery order (your videos last) → screen again. |
+| Next preset | Alt+F3 | Switches to the next preset. |
+| Brightness down / up | Alt+F5 / Alt+F6 | Changes the current preset's brightness by 10 %. |
+| Open control panel | Alt+F9 | Opens the control panel. |
+
+On the **Shortcuts** page, untick a shortcut to turn it off, or click its keys and press new ones
+(at least one of Ctrl, Alt, Shift or Win, unless it is a function key). Backspace or Delete
+removes the keys, Esc keeps them. Keys can only do one thing: giving them to a second shortcut
+takes them from the first. A warning sign means another program already uses those keys.
+
+![The Shortcuts page](docs/screenshots/shortcuts.png)
+
 ## The settings file
 
 The changes made in the application are stored in a config file, `%APPDATA%\DX Dark\DXDark.ini` (Settings →
@@ -240,7 +262,8 @@ the file list the choices for each setting. Values that are missing or out of
 range fall back to their defaults, and lines starting with `;` are ignored. Exported presets use
 the same format (`.ini`); presets exported by 0.0.1–0.0.2 (`.json`) can still be imported.
 
-Start with Windows is stored here too (`StartWithWindows = true`); DX Dark creates or deletes its
+The shortcuts are in a `[Shortcuts]` section (for example `LightOnOff = Alt+F1`; add `(off)` to
+turn one off). Start with Windows is stored here too (`StartWithWindows = true`); DX Dark creates or deletes its
 shortcut in the Startup folder to match.
 
 Settings from 0.0.1–0.0.2 (`settings.json`) are converted the first time a newer version starts;
@@ -432,6 +455,13 @@ dxdark-cli capture-test         # measure screen capture speed
 - Writing a new LED count into the strip is deliberately not offered; the factory value is used.
 
 ## Changelog
+
+### 0.3.2
+
+- Keyboard shortcuts, working in any program: Light on/off (Alt+F1), Next effect / screen
+  (Alt+F2), Next preset (Alt+F3), Brightness down and up (Alt+F5, Alt+F6) and Open control panel
+  (Alt+F9). A new Shortcuts page turns each one on or off and changes its keys; they are saved in
+  `DXDark.ini`.
 
 ### 0.3.1
 

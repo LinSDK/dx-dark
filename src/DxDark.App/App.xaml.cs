@@ -30,6 +30,7 @@ public partial class App : Application
     private MainViewModel? _vm;
     private TrayIcon? _tray;
     private SystemMonitor? _system;
+    private HotkeyService? _hotkeys;
     private MainWindow? _window;
     private TestPatternWindow? _testPattern;
     private Rect? _boundsBeforePattern;
@@ -92,6 +93,21 @@ public partial class App : Application
             }
         };
         _vm.Calibration.PatternChanged += () => _testPattern?.ShowPattern(_vm.Calibration.SelectedPattern.Pattern, _vm.Calibration.PatternSpeed);
+        _hotkeys = new HotkeyService();
+        _hotkeys.Pressed += OnShortcut;
+        _vm.Shortcuts.ShortcutsChanged += ApplyShortcuts;
+        ShortcutBox.Capturing += capturing =>
+        {
+            if (capturing)
+            {
+                _hotkeys?.Clear(); // let the keys reach the box being edited
+            }
+            else
+            {
+                ApplyShortcuts();
+            }
+        };
+        ApplyShortcuts();
         _system = new SystemMonitor(_controller);
         _controller.Notice += message => Dispatcher.BeginInvoke(() => _tray?.ShowNotice(message));
         _controller.Start();
@@ -260,6 +276,48 @@ public partial class App : Application
         _controller.ReplaceSettings(settings);
         _vm.ReloadAll();
         SyncStartWithWindows();
+        ApplyShortcuts();
+    }
+
+    private void ApplyShortcuts()
+    {
+        if (_hotkeys is not null && _controller is not null && _vm is not null)
+        {
+            _vm.Shortcuts.ShowTaken(_hotkeys.Apply(_controller.Settings.Shortcuts));
+        }
+    }
+
+    /// <summary>A keyboard shortcut was pressed (anywhere in Windows).</summary>
+    private void OnShortcut(ShortcutAction action)
+    {
+        if (_controller is null || _vm is null || _exiting)
+        {
+            return;
+        }
+
+        switch (action)
+        {
+            case ShortcutAction.LightOnOff:
+                _controller.ToggleLight();
+                break;
+            case ShortcutAction.CycleMode:
+                _controller.CycleMode();
+                break;
+            case ShortcutAction.NextPreset:
+                _controller.NextPreset();
+                break;
+            case ShortcutAction.BrightnessDown:
+                _controller.ChangeBrightness(-0.1);
+                break;
+            case ShortcutAction.BrightnessUp:
+                _controller.ChangeBrightness(0.1);
+                break;
+            case ShortcutAction.ShowControlPanel:
+                ShowMainWindow();
+                break;
+        }
+
+        _vm.RefreshState();
     }
 
     /// <summary>The Startup-folder shortcut follows StartWithWindows in DXDark.ini; leftovers in the registry are removed.</summary>
@@ -296,6 +354,7 @@ public partial class App : Application
         }
 
         _system?.Dispose();
+        _hotkeys?.Dispose();
         _tray?.Dispose();
         _vm?.Dispose();
         _controller?.Dispose();
@@ -369,6 +428,9 @@ public partial class App : Application
         window.ShowSettings();
         Capture("main-settings");
         window.HideSettings();
+        _vm.IsShortcutsPage = true;
+        Capture("main-shortcuts");
+        _vm.IsShortcutsPage = false;
 
         // The Filter section, with a blur and a hue shift applied to the picture.
         _vm.Presets.FilterBlur = 0.03;

@@ -195,6 +195,9 @@ public sealed class AppSettings
 
     public StripMemory Strip { get; set; } = new();
 
+    /// <summary>Global keyboard shortcuts, one per <see cref="ShortcutAction"/>.</summary>
+    public List<Shortcut> Shortcuts { get; set; } = ShortcutDefaults.Complete(null);
+
     public LightingSettings Lighting { get; set; } = new();
 
     public GeneralSettings General { get; set; } = new();
@@ -238,6 +241,7 @@ public sealed class AppSettings
         Lighting.Normalize();
         General ??= new GeneralSettings();
         General.Normalize();
+        Shortcuts = ShortcutDefaults.Complete(Shortcuts);
 
         Profiles ??= [];
         Profiles.RemoveAll(p => p is null);

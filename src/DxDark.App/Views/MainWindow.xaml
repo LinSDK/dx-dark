@@ -378,6 +378,31 @@
             </DockPanel>
         </Border>
 
+        <!-- ── Shortcuts strip ─────────────────────────────────────────────── -->
+        <Border Grid.Column="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1,0,0,0"
+                Visibility="{Binding IsShortcutsPage, Converter={StaticResource BoolToVisibility}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,20,18,18">
+                <ItemsControl ItemsSource="{Binding Shortcuts.Rows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="128" />
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding Enabled}" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="&#xE7BA;" Style="{StaticResource Icon}" FontSize="13" Margin="0,0,8,0"
+                                           Foreground="{StaticResource WarningBrush}" ToolTip="Another program already uses these keys"
+                                           Visibility="{Binding IsTaken, Converter={StaticResource BoolToVisibility}}" />
+                                <controls:ShortcutBox Grid.Column="2" Gesture="{Binding Gesture}" IsEnabled="{Binding Enabled}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
         <!-- ── Settings sheet ──────────────────────────────────────────────── -->
         <Grid x:Name="SettingsOverlay" Grid.ColumnSpan="3" Background="#B3000000" Visibility="Collapsed" MouseLeftButtonDown="OnOverlayBackgroundClick">
             <Border x:Name="SettingsSheet" Style="{StaticResource Card}" Width="560" Padding="0"

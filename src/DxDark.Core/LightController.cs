@@ -30,6 +30,7 @@ public sealed class LightController : IDisposable
     private volatile bool _speedTestRunning;
     private volatile bool _shuttingDown;
     private bool _warnedAboutDxLight;
+    private LightMode _lastOnMode = LightMode.ScreenSync;
     private double _aspectRatio;
     private long _aspectReadAt;
 
@@ -95,10 +96,71 @@ public sealed class LightController : IDisposable
 
     public void SetMode(LightMode mode)
     {
+        if (Settings.Lighting.Mode is LightMode.ScreenSync or LightMode.Effect)
+        {
+            _lastOnMode = Settings.Lighting.Mode; // where "Light on/off" goes back to
+        }
+
         Settings.Lighting.Mode = mode;
         _store.SaveSoon();
         _engine.Configure(BuildSyncConfig());
         ApplyModeSoon();
+        RaiseStateChanged();
+    }
+
+    /// <summary>Shortcut: lights off, or back on in the mode they had (screen or effect).</summary>
+    public void ToggleLight() =>
+        SetMode(Settings.Lighting.Mode is LightMode.ScreenSync or LightMode.Effect ? LightMode.Off : _lastOnMode);
+
+    /// <summary>Shortcut: screen → every effect in gallery order (videos last) → screen.</summary>
+    public void CycleMode()
+    {
+        List<string> effects = [.. BuiltInEffects.All.Select(e => e.Id)];
+        lock (Settings.Lighting.Videos)
+        {
+            effects.AddRange(Settings.Lighting.Videos.Select(v => v.Id));
+        }
+
+        LightingSettings lighting = Settings.Lighting;
+        if (lighting.Mode != LightMode.Effect)
+        {
+            if (lighting.Mode == LightMode.ScreenSync)
+            {
+                SetEffect(effects[0]);
+            }
+            else
+            {
+                SetMode(LightMode.ScreenSync);
+            }
+
+            return;
+        }
+
+        int next = effects.IndexOf(lighting.EffectId) + 1;
+        if (next <= 0 || next >= effects.Count)
+        {
+            SetMode(LightMode.ScreenSync);
+        }
+        else
+        {
+            SetEffect(effects[next]);
+        }
+    }
+
+    /// <summary>Shortcut: the next preset in the list.</summary>
+    public void NextPreset()
+    {
+        List<Profiles.Profile> presets = Settings.Profiles;
+        int index = presets.FindIndex(p => p.Name == Settings.ActiveProfile);
+        ActivateProfile(presets[(index + 1) % presets.Count].Name);
+    }
+
+    /// <summary>Shortcut: changes the current preset's brightness, by a tenth at a time.</summary>
+    public void ChangeBrightness(double delta)
+    {
+        Profiles.Profile preset = Settings.GetActiveProfile();
+        preset.Brightness = Math.Clamp(Math.Round((preset.Brightness + delta) * 20) / 20, 0.05, 1);
+        ProfileChanged();
         RaiseStateChanged();
     }
 

@@ -263,6 +263,27 @@ public sealed class SettingsTests : IDisposable
     }
 
     [Fact]
+    public void ShortcutsLiveInTheIniFile()
+    {
+        var settings = new AppSettings();
+        Assert.Equal("Alt+F1", settings.Shortcuts.Single(s => s.Action == ShortcutAction.LightOnOff).Gesture);
+        Assert.Equal("Alt+F2", settings.Shortcuts.Single(s => s.Action == ShortcutAction.CycleMode).Gesture);
+
+        settings.Shortcuts.Single(s => s.Action == ShortcutAction.NextPreset).Gesture = "Ctrl+Shift+P";
+        settings.Shortcuts.Single(s => s.Action == ShortcutAction.BrightnessUp).Enabled = false;
+        settings.Shortcuts.Single(s => s.Action == ShortcutAction.ShowControlPanel).Gesture = "";
+        string ini = SettingsIni.Write(settings, "test");
+        Assert.Contains("BrightnessUp = Alt+F6 (off)", ini);
+
+        List<Shortcut> copy = SettingsIni.Read(ini)!.Shortcuts;
+        Assert.Equal("Ctrl+Shift+P", copy.Single(s => s.Action == ShortcutAction.NextPreset).Gesture);
+        Assert.False(copy.Single(s => s.Action == ShortcutAction.BrightnessUp).Enabled);
+        Assert.Equal("Alt+F6", copy.Single(s => s.Action == ShortcutAction.BrightnessUp).Gesture);
+        Assert.Equal("", copy.Single(s => s.Action == ShortcutAction.ShowControlPanel).Gesture);
+        Assert.Equal(Enum.GetValues<ShortcutAction>().Length, copy.Count);
+    }
+
+    [Fact]
     public void ThePrimaryMonitorIsWrittenByName()
     {
         string ini = SettingsIni.Write(new AppSettings(), "test");

@@ -22,6 +22,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     private string _statsText = "";
     private bool _showDetails;
     private bool _isCalibrationPage;
+    private bool _isShortcutsPage;
 
     public MainViewModel(LightController controller, Dispatcher ui, bool demoMode)
     {
@@ -32,6 +33,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         Effects = new EffectsViewModel(controller, ui);
         Settings = new SettingsViewModel(controller, demoMode);
         Calibration = new CalibrationViewModel(controller, demoMode);
+        Shortcuts = new ShortcutsViewModel(controller);
         Calibration.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName is nameof(CalibrationViewModel.HasZones) or nameof(CalibrationViewModel.LedSummary) or "")
@@ -63,6 +65,8 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public CalibrationViewModel Calibration { get; }
 
+    public ShortcutsViewModel Shortcuts { get; }
+
     /// <summary>Raised on the UI thread with a snapshot that is only valid during the call.</summary>
     public event Action<PreviewSnapshot>? PreviewReceived;
 
@@ -81,6 +85,11 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         {
             if (Set(ref _isCalibrationPage, value))
             {
+                if (value)
+                {
+                    IsShortcutsPage = false;
+                }
+
                 OnPropertyChanged(nameof(IsLivePage));
                 OnPropertyChanged(nameof(ShowEffectGallery));
                 OnPropertyChanged(nameof(ShowNoZonesWarning));
@@ -93,7 +102,25 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public bool IsLivePage => !_isCalibrationPage;
+    /// <summary>The control panel shows the keyboard shortcuts instead of the preset strip.</summary>
+    public bool IsShortcutsPage
+    {
+        get => _isShortcutsPage;
+        set
+        {
+            if (Set(ref _isShortcutsPage, value))
+            {
+                if (value)
+                {
+                    IsCalibrationPage = false;
+                }
+
+                OnPropertyChanged(nameof(IsLivePage));
+            }
+        }
+    }
+
+    public bool IsLivePage => !_isCalibrationPage && !_isShortcutsPage;
 
     public bool ShowEffectGallery => IsEffect;
 
@@ -198,6 +225,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
     {
         Effects.ReloadVideos();
         Calibration.Reload();
+        Shortcuts.Reload();
         Presets.RefreshMonitors();
         RefreshState();
     }

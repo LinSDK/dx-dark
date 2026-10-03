@@ -38,6 +38,13 @@ public static partial class SettingsIni
             .Set("Speed", Number(settings.Lighting.EffectSpeed) + "x")
             .Set("Color", settings.Lighting.SolidColor);
 
+        IniSection shortcuts = ini.Add("Shortcuts")
+            .Comment("Keys such as Alt+F1 or Ctrl+Shift+L; add \"(off)\" to turn one off, or leave it empty for none.");
+        foreach (Shortcut shortcut in ShortcutDefaults.Complete(settings.Shortcuts))
+        {
+            shortcuts.Set(ShortcutDefaults.Key(shortcut.Action), shortcut.Enabled ? shortcut.Gesture : $"{shortcut.Gesture} (off)".Trim());
+        }
+
         CalibrationSettings calibration = settings.Calibration;
         ini.Add("Strip")
             .Comment("Brightness is the strip's own brightness, on top of each preset's. ColorOrder: RGB, RBG, GRB, GBR, BRG or BGR.")
@@ -157,6 +164,18 @@ public static partial class SettingsIni
             if (Enum.TryParse(stripSection.Get("ColorOrder"), ignoreCase: true, out ColorOrder order))
             {
                 c.ColorOrder = order;
+            }
+        }
+
+        if (ini.Find("Shortcuts") is { } shortcutSection)
+        {
+            foreach (Shortcut shortcut in settings.Shortcuts)
+            {
+                if (shortcutSection.Get(ShortcutDefaults.Key(shortcut.Action)) is { } value)
+                {
+                    shortcut.Enabled = !value.Contains("(off)", StringComparison.OrdinalIgnoreCase);
+                    shortcut.Gesture = value.Replace("(off)", "", StringComparison.OrdinalIgnoreCase).Trim();
+                }
             }
         }
 
