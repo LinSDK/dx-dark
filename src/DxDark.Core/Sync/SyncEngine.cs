@@ -37,6 +37,9 @@ public sealed class SyncEngine : IDisposable
     /// <summary>While calibrating, zones stay within this share of the screen so the controls in the middle are never sampled.</summary>
     private const double CalibrationMaxDepth = 0.15;
 
+    /// <summary>When black bars appear or go, the LEDs fade from the old picture area to the new one over this time.</summary>
+    private const double BarFadeSeconds = 0.7;
+
     private static readonly int[][] ChannelOrders =
     [
         [0, 1, 2], // RGB
@@ -181,6 +184,8 @@ public sealed class SyncEngine : IDisposable
     {
         using var sleeper = new PrecisionSleeper();
         var frame = new CapturedFrame();
+        var filtered = new CapturedFrame();
+        var filters = new FrameFilters();
         var analyzer = new FrameAnalyzer();
         var bars = new BlackBarDetector();
         var pipeline = new ColorPipeline();
@@ -195,7 +200,13 @@ public sealed class SyncEngine : IDisposable
         bool closedLoop = false;
         Vector3[] samples = [];
         PixelRect[] rects = [];
+        PixelRect[] fadeRects = [];
         PixelRect content = default;
+        PixelRect fadeFrom = default;
+        double fadeStart = double.NegativeInfinity;
+        SyncConfig? filteredFor = null;
+        long filteredSequence = 0;
+        CapturedFrame picture = frame;
         bool haveFrame = false;
         bool rectsDirty = true;
         byte[] lastSent = [];
@@ -268,28 +279,37 @@ public sealed class SyncEngine : IDisposable
                     {
                         samples = new Vector3[placements.Length];
                         rects = new PixelRect[placements.Length];
+                        fadeRects = new PixelRect[placements.Length];
                     }
 
                     rectsDirty = true;
                 }
 
-                double depth = cfg.Calibrating ? Math.Min(cfg.Profile.SampleDepth, CalibrationMaxDepth) : cfg.Profile.SampleDepth;
                 bool detectBars = cfg.Profile.DetectBlackBars && source is not BuiltInEffectSource && !cfg.Calibrating; // test patterns have no bars
+                bool fading = loopStart - fadeStart < BarFadeSeconds;
 
-                bool idle = haveFrame && pipeline.Converged && !_forceSend && chase is null;
+                bool idle = haveFrame && pipeline.Converged && !_forceSend && chase is null && !fading;
                 CaptureStatus status = source.Next(frame, loopStart, idle ? 40 : 0, spec);
                 double now = clock.Elapsed.TotalSeconds;
                 long workStart = Stopwatch.GetTimestamp();
 
+                bool newPicture = false;
                 if (status == CaptureStatus.NewFrame)
                 {
                     haveFrame = true;
                     captured++;
-                    analyzer.Load(frame);
-                    PixelRect picture = bars.Update(frame, now, detectBars);
-                    if (rectsDirty || picture != content)
+                    newPicture = true;
+                    PixelRect area = bars.Update(frame, now, detectBars);
+                    if (area != content)
                     {
-                        content = picture;
+                        // Bars appeared or went: fade from the old picture area instead of jumping.
+                        if (content.Area > 0 && detectBars)
+                        {
+                            fadeFrom = content;
+                            fadeStart = now;
+                        }
+
+                        content = area;
                         rectsDirty = true;
                     }
                 }
@@ -309,20 +329,52 @@ public sealed class SyncEngine : IDisposable
                     continue;
                 }
 
-                if (status == CaptureStatus.NewFrame || rectsDirty)
+                // The preset's filters work on a copy, so changing them re-filters the last picture.
+                if (newPicture || !ReferenceEquals(filteredFor, cfg))
+                {
+                    filteredFor = cfg;
+                    if (cfg.Profile.HasFilters)
+                    {
+                        filters.Apply(frame, filtered, cfg.Profile);
+                        filtered.Sequence = --filteredSequence; // never equal to a source frame's number
+                        picture = filtered;
+                    }
+                    else
+                    {
+                        picture = frame;
+                    }
+
+                    analyzer.Load(picture);
+                    newPicture = true;
+                }
+
+                fading = now - fadeStart < BarFadeSeconds;
+                if (newPicture || rectsDirty || fading)
                 {
                     if (rectsDirty)
                     {
                         rectsDirty = false;
+                        ZoneArea[] areas = LayoutGeometry.Areas(cfg.Layout, cfg.Profile, Aspect(content));
+                        ZoneArea[] fadeAreas = LayoutGeometry.Areas(cfg.Layout, cfg.Profile, Aspect(fadeFrom));
                         for (int i = 0; i < placements.Length; i++)
                         {
-                            rects[i] = LayoutGeometry.SampleRect(placements[i], content, depth, cfg.Profile.ZoneOverlap);
+                            int zone = placements[i].Segment;
+                            rects[i] = Sample(placements[i], areas[zone], content, cfg.Calibrating);
+                            fadeRects[i] = Sample(placements[i], fadeAreas[zone], fadeFrom, cfg.Calibrating);
                         }
                     }
 
+                    float k = fading ? (float)SmoothStep((now - fadeStart) / BarFadeSeconds) : 1f;
                     for (int i = 0; i < placements.Length; i++)
                     {
-                        samples[i] = placements[i].IsMapped ? analyzer.Average(rects[i], cfg.Profile.ColorFocus) : Vector3.Zero;
+                        if (!placements[i].IsMapped)
+                        {
+                            samples[i] = Vector3.Zero;
+                            continue;
+                        }
+
+                        Vector3 sample = analyzer.Average(rects[i], cfg.Profile.ColorFocus);
+                        samples[i] = k < 1f ? Vector3.Lerp(analyzer.Average(fadeRects[i], cfg.Profile.ColorFocus), sample, k) : sample;
                     }
                 }
 
@@ -382,7 +434,7 @@ public sealed class SyncEngine : IDisposable
                         lutVersion++;
                     }
 
-                    Publish(frame, lut, lutVersion, content, rects, placements, pipeline, chase is not null ? chaseOutput : pipeline.PreviewOutput, sending);
+                    Publish(picture, lut, lutVersion, content, rects, placements, pipeline, chase is not null ? chaseOutput : pipeline.PreviewOutput, sending);
                 }
 
                 if (now - statsStart >= 1.0)
@@ -568,6 +620,22 @@ public sealed class SyncEngine : IDisposable
         }
 
         return runs;
+    }
+
+    private static double Aspect(PixelRect content) =>
+        content.Width > 0 && content.Height > 0 ? content.Width / (double)content.Height : 16.0 / 9.0;
+
+    /// <summary>One LED's share of its zone's area; near the edge only while the test pattern shows.</summary>
+    private static PixelRect Sample(LedPlacement placement, ZoneArea area, PixelRect content, bool calibrating)
+    {
+        PixelRect rect = LayoutGeometry.SampleRect(placement, area, content);
+        return calibrating && rect.Area > 0 ? LayoutGeometry.KeepNearEdge(rect, placement.Edge, content, CalibrationMaxDepth) : rect;
+    }
+
+    private static double SmoothStep(double x)
+    {
+        x = Math.Clamp(x, 0, 1);
+        return x * x * (3 - 2 * x);
     }
 
     private void Publish(CapturedFrame frame, PreviewLut lut, int lutVersion, PixelRect content, PixelRect[] rects, LedPlacement[] placements, ColorPipeline pipeline, ReadOnlySpan<byte> colors, bool sending)

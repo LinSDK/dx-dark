@@ -230,7 +230,7 @@
                     </Grid.ColumnDefinitions>
                     <ComboBox ItemsSource="{Binding Presets.ProfileNames}" SelectedItem="{Binding Presets.SelectedProfile}" ToolTip="Preset" />
                     <!-- Icons go in an inner TextBlock: a font set on the button itself would also apply to its tooltip and menu. -->
-                    <Button Grid.Column="1" Margin="6,0,0,0" Padding="10,8" MinWidth="0" ToolTip="Save as new preset" Command="{Binding Presets.SaveAsCommand}">
+                    <Button Grid.Column="1" Margin="6,0,0,0" Padding="10,8" MinWidth="0" ToolTip="Save preset" Command="{Binding Presets.SaveAsCommand}">
                         <TextBlock Text="&#xE74E;" FontFamily="{StaticResource IconFont}" FontSize="14" />
                     </Button>
                     <Button x:Name="PresetMenuButton" Grid.Column="2" Margin="6,0,0,0" Padding="10,8" MinWidth="0" ToolTip="More" Click="OnPresetMenu">
@@ -248,7 +248,7 @@
                     </Button>
                 </Grid>
 
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,14,18,18">
+                <ScrollViewer x:Name="PresetScroll" VerticalScrollBarVisibility="Auto" Padding="18,14,18,18">
                     <StackPanel>
                         <Border Style="{StaticResource StripSection}">
                             <StackPanel>
@@ -260,14 +260,6 @@
                                                         Minimum="10" Maximum="120" Step="5" Format="0" Unit="fps"
                                                         DefaultValue="{Binding Presets.Defaults.FrameRate}"
                                                         Description="How often the strip is updated. Independent of the monitor's refresh rate." />
-                                <controls:SettingSlider Label="Sampling depth" Value="{Binding Presets.SampleDepth}"
-                                                        Minimum="0.02" Maximum="0.5" Step="0.01" Scale="100" Format="0" Unit="%"
-                                                        DefaultValue="{Binding Presets.Defaults.SampleDepth}"
-                                                        Description="How far into the picture each LED looks." />
-                                <controls:SettingSlider Label="Zone overlap" Value="{Binding Presets.ZoneOverlap}"
-                                                        Minimum="0" Maximum="3" Step="0.1" Scale="100" Format="0" Unit="%"
-                                                        DefaultValue="{Binding Presets.Defaults.ZoneOverlap}"
-                                                        Description="How much each zone overlaps its neighbors." />
                                 <controls:SettingSlider Label="Color focus" Value="{Binding Presets.ColorFocus}"
                                                         Minimum="0" Maximum="1" Step="0.05" Scale="100" Format="0" Unit="%"
                                                         DefaultValue="{Binding Presets.Defaults.ColorFocus}"
@@ -323,6 +315,28 @@
                                                         Description="6500 K is neutral; lower is warmer." />
                             </StackPanel>
                         </Border>
+                        <Border Style="{StaticResource StripSection}">
+                            <StackPanel>
+                                <TextBlock Text="FILTER" Style="{StaticResource StripHeader}" Margin="0,0,0,10" />
+                                <controls:SettingSlider Label="Blur" Value="{Binding Presets.FilterBlur}"
+                                                        Minimum="0" Maximum="0.1" Step="0.005" Scale="100" Format="0.#" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.FilterBlur}"
+                                                        Description="Gaussian blur of the picture before it is sampled, as a share of its height." />
+                                <controls:SettingSlider Label="Pixelate" Value="{Binding Presets.FilterPixelate}"
+                                                        Minimum="0" Maximum="0.1" Step="0.005" Scale="100" Format="0.#" Unit="%"
+                                                        DefaultValue="{Binding Presets.Defaults.FilterPixelate}"
+                                                        Description="Turns the picture into blocks of this size (share of its height)." />
+                                <controls:SettingSlider Label="Hue shift" Value="{Binding Presets.FilterHueShift}"
+                                                        Minimum="-180" Maximum="180" Step="5" Format="0" Unit="°"
+                                                        DefaultValue="{Binding Presets.Defaults.FilterHueShift}"
+                                                        Description="Turns every color around the color wheel." />
+                                <controls:SettingSlider Label="Posterize" Value="{Binding Presets.FilterPosterize}"
+                                                        Minimum="0" Maximum="16" Step="1" Format="0" Unit="levels"
+                                                        DefaultValue="{Binding Presets.Defaults.FilterPosterize}"
+                                                        Description="Reduces each color channel to this many levels (0 is off)." />
+                                <CheckBox Content="Invert colors" IsChecked="{Binding Presets.FilterInvert}" Margin="0,4,0,6" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
                 </ScrollViewer>
             </DockPanel>
@@ -332,13 +346,32 @@
         <Border Grid.Column="2" Background="{StaticResource SidebarBrush}" BorderBrush="{StaticResource CardBorderBrush}" BorderThickness="1,0,0,0"
                 Visibility="{Binding IsCalibrationPage, Converter={StaticResource BoolToVisibility}}">
             <DockPanel>
-                <Button DockPanel.Dock="Top" Margin="18,20,18,4" Padding="12,8" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                        Click="OnShowTestPattern" ToolTip="Fills the synced screen with a test pattern; the zones can still be edited over it">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE740;" FontFamily="{StaticResource IconFont}" FontSize="14" VerticalAlignment="Center" Margin="0,0,10,0" />
-                        <TextBlock Text="Show test pattern" VerticalAlignment="Center" />
-                    </StackPanel>
-                </Button>
+                <StackPanel DockPanel.Dock="Top" Margin="18,20,18,4" DataContext="{Binding Calibration}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="150" />
+                        </Grid.ColumnDefinitions>
+                        <ToggleButton IsChecked="{Binding IsPatternShown}" Padding="10,7" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                      ToolTip="Shows the test pattern on the synced screen, behind this window">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="&#xE740;" FontFamily="{StaticResource IconFont}" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0" />
+                                <TextBlock Text="Test pattern" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </ToggleButton>
+                        <ComboBox Grid.Column="2" ItemsSource="{Binding Patterns}" SelectedItem="{Binding SelectedPattern}" DisplayMemberPath="Name"
+                                  ToolTip="Test pattern" />
+                    </Grid>
+                    <controls:SettingSlider Margin="0,10,0,0" Label="Pattern speed" Value="{Binding PatternSpeed}" Minimum="0.1" Maximum="4" Step="0.1"
+                                            Format="0.0" Unit="×" DefaultValue="1" ValueWidth="62"
+                                            Visibility="{Binding IsPatternShown, Converter={StaticResource BoolToVisibility}}" />
+                    <DockPanel Margin="0,10,0,0" DataContext="{Binding DataContext, RelativeSource={RelativeSource AncestorType=Window}}">
+                        <TextBlock Text="Preset" VerticalAlignment="Center" Width="72" />
+                        <ComboBox ItemsSource="{Binding Presets.ProfileNames}" SelectedItem="{Binding Presets.SelectedProfile}"
+                                  ToolTip="The zone areas are saved in this preset" />
+                    </DockPanel>
+                </StackPanel>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="18,16,10,18">
                     <controls:CalibrationPanel DataContext="{Binding Calibration}" CardWidth="296" />
                 </ScrollViewer>

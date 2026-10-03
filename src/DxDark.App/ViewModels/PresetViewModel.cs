@@ -87,10 +87,6 @@ public sealed class PresetViewModel : ObservableObject
 
     public double FrameRate { get => Profile.FrameRate; set => Edit(p => p.FrameRate = (int)Math.Round(value)); }
 
-    public double SampleDepth { get => Profile.SampleDepth; set => Edit(p => p.SampleDepth = value); }
-
-    public double ZoneOverlap { get => Profile.ZoneOverlap; set => Edit(p => p.ZoneOverlap = value); }
-
     public double ColorFocus { get => Profile.ColorFocus; set => Edit(p => p.ColorFocus = value); }
 
     public bool DetectBlackBars { get => Profile.DetectBlackBars; set => Edit(p => p.DetectBlackBars = value); }
@@ -117,6 +113,22 @@ public sealed class PresetViewModel : ObservableObject
 
     public double BlackThreshold { get => Profile.BlackThreshold; set => Edit(p => p.BlackThreshold = value); }
 
+    // ── Filter ─────────────────────────────────────────────────────────────
+
+    public double FilterBlur { get => Profile.FilterBlur; set => Edit(p => p.FilterBlur = value); }
+
+    public double FilterPixelate { get => Profile.FilterPixelate; set => Edit(p => p.FilterPixelate = value); }
+
+    public double FilterHueShift { get => Profile.FilterHueShift; set => Edit(p => p.FilterHueShift = value); }
+
+    public double FilterPosterize
+    {
+        get => Profile.FilterPosterize;
+        set => Edit(p => p.FilterPosterize = value < 1.5 ? 0 : (int)Math.Round(value));
+    }
+
+    public bool FilterInvert { get => Profile.FilterInvert; set => Edit(p => p.FilterInvert = value); }
+
     /// <summary>Re-reads everything (e.g. after the tray menu switched presets).</summary>
     public void Refresh()
     {
@@ -142,19 +154,36 @@ public sealed class PresetViewModel : ObservableObject
     /// <summary>Saves the current settings under a new name and switches to it.</summary>
     private void SaveAs()
     {
-        string? name = Dialogs.Prompt("Save as new preset", "", UniqueName(IsBuiltIn(Profile.Name) ? "My preset" : $"{Profile.Name} copy"));
+        // The current name is offered first: keeping it saves over the current preset (after asking),
+        // a new name saves a new preset.
+        string? name = Dialogs.Prompt("Save preset", "", Profile.Name);
         if (name is null)
         {
             return;
         }
 
-        if (Settings.Profiles.Any(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase)))
+        Profile? existing = Settings.Profiles.FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase));
+        if (existing is null)
         {
-            Dialogs.Info("Save preset", $"A preset called \"{name}\" already exists.");
+            AddProfile(Profile.CloneAs(name));
             return;
         }
 
-        AddProfile(Profile.CloneAs(name));
+        if (!Dialogs.Confirm("Overwrite preset", $"Overwrite the preset \"{existing.Name}\" with the current settings?", "Overwrite", destructive: true))
+        {
+            return;
+        }
+
+        if (existing != Profile)
+        {
+            Settings.Profiles[Settings.Profiles.IndexOf(existing)] = Profile.CloneAs(existing.Name);
+            _controller.ActivateProfile(existing.Name);
+        }
+
+        _controller.ProfileChanged();
+        _controller.Store.SaveNow();
+        SyncNames();
+        OnAllPropertiesChanged();
     }
 
     private void AddProfile(Profile profile)
@@ -254,7 +283,6 @@ public sealed class PresetViewModel : ObservableObject
         }
     }
 
-    private static bool IsBuiltIn(string name) => BuiltInProfiles.Find(name) is not null;
 
     private string UniqueName(string baseName)
     {

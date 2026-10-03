@@ -30,7 +30,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
         DemoMode = demoMode;
         Presets = new PresetViewModel(controller);
         Effects = new EffectsViewModel(controller, ui);
-        Settings = new SettingsViewModel(controller);
+        Settings = new SettingsViewModel(controller, demoMode);
         Calibration = new CalibrationViewModel(controller, demoMode);
         Calibration.PropertyChanged += (_, e) =>
         {
@@ -87,6 +87,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
                 if (!value)
                 {
                     Calibration.ClearSelection();
+                    Calibration.IsPatternShown = false;
                 }
             }
         }
@@ -153,7 +154,7 @@ public sealed class MainViewModel : ObservableObject, IDisposable
 
     public string DetailKit => DemoMode ? "32\"" : Controller.StripInfo is { } i ? $"{i.DisplaySizeInches}\"" : "–";
 
-    public string DetailId => DemoMode ? "cdab38e851bd5651" : Controller.StripInfo?.Uuid ?? "–";
+    public string DetailId => DemoMode ? "0123456789abcdef" : Controller.StripInfo?.Uuid ?? "–";
 
     public string DetailZones => $"{LightStrip.ZoneBoundaries(DemoMode ? 110 : Controller.StripLedCount).Length - 1} per frame";
 

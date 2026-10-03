@@ -6,8 +6,9 @@ namespace DxDark.Core.Imaging;
 /// <summary>
 /// Finds letterbox (top/bottom) and pillarbox (left/right) black bars so LEDs sample the picture,
 /// not the bars. Bars are assumed symmetric, which avoids mistaking a dark scene edge for a bar.
-/// Growing bars must be stable for a second before they apply; shrinking applies almost at once
-/// so bright content entering the bar area is never missed.
+/// Growing bars must be stable for a second, and need a lit picture next to them; dark or fading
+/// frames never remove bars that are already found, so a movie fading to black and back keeps
+/// them. Shrinking applies almost at once so bright content entering the bar area is never missed.
 /// </summary>
 public sealed class BlackBarDetector
 {
@@ -47,21 +48,21 @@ public sealed class BlackBarDetector
         bool blackFrame = top >= maxRows && bottom >= maxRows;
         if (!blackFrame)
         {
-            // Real bars border a picture: the first row or column inside them is largely lit. A
-            // small bright object on a dark screen (e.g. a test pattern) is not a picture between bars.
             int rows = Math.Min(top, bottom), columns = Math.Min(left, right);
-            if (rows > 0 && (LitFraction(frame, row: rows) < MinEdgeLit || LitFraction(frame, row: h - 1 - rows) < MinEdgeLit))
+
+            // Bigger bars than before only count when a lit picture borders them: a dim or fading
+            // scene, or a small bright object on a dark screen (e.g. a test pattern), is no evidence.
+            if (rows <= _vertical.Applied + 1
+                || (rows < maxRows && LitFraction(frame, row: rows) >= MinEdgeLit && LitFraction(frame, row: h - 1 - rows) >= MinEdgeLit))
             {
-                rows = 0;
+                _vertical.Update(rows, timeSeconds);
             }
 
-            if (columns > 0 && (LitFraction(frame, column: columns) < MinEdgeLit || LitFraction(frame, column: w - 1 - columns) < MinEdgeLit))
+            if (columns <= _horizontal.Applied + 1
+                || (columns < maxCols && LitFraction(frame, column: columns) >= MinEdgeLit && LitFraction(frame, column: w - 1 - columns) >= MinEdgeLit))
             {
-                columns = 0;
+                _horizontal.Update(columns, timeSeconds);
             }
-
-            _vertical.Update(rows, timeSeconds);
-            _horizontal.Update(columns, timeSeconds);
         }
 
         int v = Math.Min(_vertical.Applied, maxRows);

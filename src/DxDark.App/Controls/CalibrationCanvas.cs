@@ -11,11 +11,12 @@ public enum CalibrationPattern
     BorderChase,
     ColorCycle,
     White,
+    RainbowRing,
 }
 
 /// <summary>
-/// Full-screen test patterns for the calibration screen. The strip samples only the screen
-/// edges, so the calibration controls can sit in the middle without being picked up.
+/// Full-screen test patterns, shown behind the control panel. The strip samples only the screen
+/// edges, so the control panel can sit in the middle without being picked up.
 /// </summary>
 public sealed class CalibrationCanvas : FrameworkElement
 {
@@ -57,6 +58,7 @@ public sealed class CalibrationCanvas : FrameworkElement
                 break;
             case CalibrationPattern.ColoredArms:
                 DrawCross(dc, center, w, h, t, null);
+                dc.DrawEllipse(Brushes.Black, null, center, h * 0.13, h * 0.13);
                 break;
             case CalibrationPattern.EdgeColors:
                 DrawEdges(dc, w, h);
@@ -69,6 +71,9 @@ public sealed class CalibrationCanvas : FrameworkElement
                 break;
             case CalibrationPattern.White:
                 dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, w, h));
+                break;
+            case CalibrationPattern.RainbowRing:
+                DrawRainbowRing(dc, center, w, h, t);
                 break;
         }
     }
@@ -122,7 +127,32 @@ public sealed class CalibrationCanvas : FrameworkElement
             : s < w + h ? new Rect(w - depth, s - w - size / 2, depth, size)
             : s < 2 * w + h ? new Rect(w - (s - w - h) - size / 2, h - depth, size, depth)
             : new Rect(0, h - (s - 2 * w - h) - size / 2, depth, size);
-        dc.DrawRectangle(new SolidColorBrush(Color.FromRgb(120, 230, 255)), null, block);
+        var brush = new SolidColorBrush(HueColor(t * 0.06)); // the block slowly runs through every color
+        brush.Freeze();
+        dc.DrawRectangle(brush, null, block);
+    }
+
+    /// <summary>Every hue around the screen, slowly turning: shows that zones join up at the corners.</summary>
+    private static void DrawRainbowRing(DrawingContext dc, Point center, double w, double h, double t)
+    {
+        const int Wedges = 180;
+        double reach = Math.Sqrt(w * w + h * h);
+        for (int i = 0; i < Wedges; i++)
+        {
+            double a0 = 2 * Math.PI * i / Wedges, a1 = 2 * Math.PI * (i + 1.05) / Wedges;
+            var geometry = new StreamGeometry();
+            using (StreamGeometryContext g = geometry.Open())
+            {
+                g.BeginFigure(center, true, true);
+                g.LineTo(new Point(center.X + reach * Math.Cos(a0), center.Y + reach * Math.Sin(a0)), false, false);
+                g.LineTo(new Point(center.X + reach * Math.Cos(a1), center.Y + reach * Math.Sin(a1)), false, false);
+            }
+
+            geometry.Freeze();
+            var brush = new SolidColorBrush(HueColor((double)i / Wedges + t * 0.05));
+            brush.Freeze();
+            dc.DrawGeometry(brush, null, geometry);
+        }
     }
 
     private static Color HueColor(double hue)

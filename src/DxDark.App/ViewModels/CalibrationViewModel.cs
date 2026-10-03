@@ -5,6 +5,7 @@ using DxDark.App.Controls;
 using DxDark.App.Infrastructure;
 using DxDark.Core;
 using DxDark.Core.Layout;
+using DxDark.Core.Profiles;
 using DxDark.Core.Settings;
 using DxDark.Protocol;
 
@@ -38,6 +39,7 @@ public sealed class ZoneViewModel : ObservableObject
         _owner = owner;
         Model = model;
         RemoveCommand = new RelayCommand(() => _owner.Remove(this));
+        ResetAreaCommand = new RelayCommand(() => _owner.ResetArea(Index));
     }
 
     public LedSegment Model { get; }
@@ -108,20 +110,32 @@ public sealed class ZoneViewModel : ObservableObject
     /// <summary>The detected count for this zone's edge; the slider's reset button goes back to it.</summary>
     public double DetectedLeds => _owner.DetectedFor(Model.Edge);
 
-    /// <summary>Sampling shift in LED widths (negative: left / up).</summary>
-    public double Nudge
+    /// <summary>Overlap of this zone's area in the current preset.</summary>
+    public double ZoneOverlap
     {
-        get => Model.Nudge;
+        get => _owner.AreaOf(Index).Overlap;
         set
         {
-            double nudge = Math.Round(Math.Clamp(value, -LedSegment.MaxNudge, LedSegment.MaxNudge) * 2) / 2;
-            if (Math.Abs(Model.Nudge - nudge) > 1e-9)
+            ZoneArea area = _owner.AreaOf(Index);
+            if (Math.Abs(area.Overlap - value) > 0.0005)
             {
-                Model.Nudge = nudge;
-                OnPropertyChanged();
-                _owner.Edited(this, ZoneEdit.Quiet);
+                _owner.SetArea(Index, area with { Overlap = value });
             }
         }
+    }
+
+    /// <summary>The preset's usual overlap; the reset button goes back to it.</summary>
+    public double PresetOverlap => _owner.Preset.ZoneOverlap;
+
+    /// <summary>Puts this zone's area in the current preset back to the whole edge.</summary>
+    public ICommand ResetAreaCommand { get; }
+
+    private int Index => _owner.Zones.IndexOf(this);
+
+    internal void RefreshArea()
+    {
+        OnPropertyChanged(nameof(ZoneOverlap));
+        OnPropertyChanged(nameof(PresetOverlap));
     }
 
     public bool IsSelected { get => _isSelected; internal set => Set(ref _isSelected, value); }
@@ -133,6 +147,7 @@ public sealed class ZoneViewModel : ObservableObject
         OnPropertyChanged(nameof(MaxLeds));
         OnPropertyChanged(nameof(DetectedLeds));
         OnPropertyChanged(nameof(LedCount));
+        RefreshArea();
     }
 }
 
@@ -157,6 +172,7 @@ public sealed class CalibrationViewModel : ObservableObject
     private PatternChoice _pattern;
     private double _patternSpeed = 1;
     private ZoneViewModel? _selectedZone;
+    private bool _patternShown;
     private (int Horizontal, int Vertical) _sides;
 
     public CalibrationViewModel(LightController controller, bool demoMode = false)
@@ -171,6 +187,7 @@ public sealed class CalibrationViewModel : ObservableObject
             new(CalibrationPattern.BorderChase, "Chase"),
             new(CalibrationPattern.ColorCycle, "Cycle"),
             new(CalibrationPattern.White, "White"),
+            new(CalibrationPattern.RainbowRing, "Rainbow ring"),
         ];
         _pattern = Patterns[0];
         Zones = [];
@@ -187,6 +204,9 @@ public sealed class CalibrationViewModel : ObservableObject
 
     /// <summary>Raised when another zone is selected (or none).</summary>
     public event Action? SelectionChanged;
+
+    /// <summary>Raised when a zone's area changes, or the preset (and with it every area).</summary>
+    public event Action? AreasChanged;
 
     public IReadOnlyList<PatternChoice> Patterns { get; }
 
@@ -210,7 +230,56 @@ public sealed class CalibrationViewModel : ObservableObject
             if (value is not null && Set(ref _pattern, value))
             {
                 PatternChanged?.Invoke();
+                IsPatternShown = true; // picking a pattern shows it
             }
+        }
+    }
+
+    /// <summary>The test pattern fills the synced screen behind the control panel.</summary>
+    public bool IsPatternShown { get => _patternShown; set => Set(ref _patternShown, value); }
+
+    internal Profile Preset => _controller.Settings.GetActiveProfile();
+
+    /// <summary>The area every zone samples in the current preset, for a picture of the given width / height.</summary>
+    public IReadOnlyList<ZoneArea> AreasFor(double aspect) => LayoutGeometry.Areas(Layout, Preset, aspect);
+
+    internal ZoneArea AreaOf(int zone) =>
+        zone >= 0 && zone < Layout.Segments.Count ? AreasFor(_controller.ScreenAspect)[zone] : default;
+
+    /// <summary>Sets zone <paramref name="zone"/>'s area in the current preset (dragged in the live view).</summary>
+    public void SetArea(int zone, ZoneArea area)
+    {
+        if (zone < 0 || zone >= Zones.Count)
+        {
+            return;
+        }
+
+        Preset.SetArea(zone, area);
+        _controller.ProfileChanged();
+        Zones[zone].RefreshArea();
+        AreasChanged?.Invoke();
+    }
+
+    public void ResetArea(int zone)
+    {
+        if (zone < 0 || zone >= Zones.Count)
+        {
+            return;
+        }
+
+        Preset.SetArea(zone, null);
+        _controller.ProfileChanged();
+        Zones[zone].RefreshArea();
+        AreasChanged?.Invoke();
+    }
+
+    /// <summary>Moves the selected zone's area by a fraction of the picture (arrow keys).</summary>
+    public void MoveSelectedArea(double dx, double dy)
+    {
+        if (SelectedIndex is int zone and >= 0)
+        {
+            ZoneArea area = AreaOf(zone);
+            SetArea(zone, area with { X = area.X + dx, Y = area.Y + dy });
         }
     }
 
@@ -331,6 +400,7 @@ public sealed class CalibrationViewModel : ObservableObject
         OnPropertyChanged(nameof(MaxLeds));
         OnPropertyChanged(nameof(DetectedText));
         OnPropertyChanged(nameof(StripBrightness));
+        AreasChanged?.Invoke();
     }
 
     /// <summary>Deselects the zone and stops showing it on the strip (leaving Calibration, hiding the window).</summary>
@@ -379,8 +449,16 @@ public sealed class CalibrationViewModel : ObservableObject
         }
 
         _controller.StopShowingZone();
+        int index = Zones.IndexOf(zone);
+        foreach (Profile profile in _controller.Settings.Profiles)
+        {
+            profile.RemoveZone(index);
+        }
+
         Layout.Segments.Remove(zone.Model);
         Zones.Remove(zone);
+        _controller.ProfileChanged();
+        AreasChanged?.Invoke();
         _controller.ZonesChanged();
         Renumber();
         if (SelectedZone is { } still)
@@ -405,6 +483,7 @@ public sealed class CalibrationViewModel : ObservableObject
         Zones.Add(zone);
         _controller.ZonesChanged();
         Renumber();
+        AreasChanged?.Invoke();
         Select(zone);
     }
 
@@ -417,8 +496,15 @@ public sealed class CalibrationViewModel : ObservableObject
 
         SelectedZone = null;
         _controller.StopShowingZone();
+        foreach (Profile profile in _controller.Settings.Profiles)
+        {
+            profile.TrimAreas(0);
+        }
+
         Layout.Segments.Clear();
         Zones.Clear();
+        _controller.ProfileChanged();
+        AreasChanged?.Invoke();
         _controller.ZonesChanged();
         Renumber();
     }

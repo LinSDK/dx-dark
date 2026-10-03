@@ -96,18 +96,13 @@ public class LayoutTests
     }
 
     [Fact]
-    public void NudgeMovesAZonesSamplingAlongItsEdgeInScreenTerms()
+    public void LedsSitEvenlyAlongTheirEdgeInScreenOrder()
     {
-        var plain = new LedLayout { Segments = [new LedSegment { Edge = ScreenEdge.Top, LedCount = 10 }] };
-        var nudged = new LedLayout { Segments = [new LedSegment { Edge = ScreenEdge.Top, LedCount = 10, Nudge = 2 }] };
-        var reversed = new LedLayout { Segments = [new LedSegment { Edge = ScreenEdge.Top, LedCount = 10, Nudge = 2, Reversed = true }] };
+        var forward = new LedLayout { Segments = [new LedSegment { Edge = ScreenEdge.Top, LedCount = 10 }] };
+        var reversed = new LedLayout { Segments = [new LedSegment { Edge = ScreenEdge.Top, LedCount = 10, Reversed = true }] };
 
-        LedPlacement[] a = LayoutGeometry.Placements(plain);
-        LedPlacement[] b = LayoutGeometry.Placements(nudged);
-        LedPlacement[] c = LayoutGeometry.Placements(reversed);
-
-        Assert.Equal(a[0].Position + 0.2, b[0].Position, 6);  // two LED widths to the right
-        Assert.Equal(b[0].Position, c[9].Position, 6);        // same screen spot whatever the orientation
+        Assert.Equal(0.05, LayoutGeometry.Placements(forward)[0].Position, 6);
+        Assert.Equal(0.95, LayoutGeometry.Placements(reversed)[0].Position, 6); // LED 1 at the right
     }
 
     [Fact]

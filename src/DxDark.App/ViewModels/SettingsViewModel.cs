@@ -18,9 +18,13 @@ public sealed class SettingsViewModel : ObservableObject
     private string _speedTestText = "";
     private bool _speedTestRunning;
 
-    public SettingsViewModel(LightController controller)
+    private readonly bool _demoMode;
+
+    /// <param name="demoMode">UI snapshots: show the usual settings path instead of the snapshot folder.</param>
+    public SettingsViewModel(LightController controller, bool demoMode = false)
     {
         _controller = controller;
+        _demoMode = demoMode;
         OpenConfigFileCommand = new RelayCommand(OpenConfigFile);
         OpenSettingsFolderCommand = new RelayCommand(() => OpenPath(_controller.Store.Directory));
         OpenLogCommand = new RelayCommand(() => OpenPath(Log.FilePath ?? _controller.Store.Directory));
@@ -44,7 +48,7 @@ public sealed class SettingsViewModel : ObservableObject
     public ICommand SpeedTestCommand { get; }
 
     /// <summary>The settings file (DXDark.ini).</summary>
-    public string ConfigFilePath => _controller.Store.FilePath;
+    public string ConfigFilePath => _demoMode ? @"%APPDATA%\DX Dark\DXDark.ini" : _controller.Store.FilePath;
 
     /// <summary>Stored in DXDark.ini; the Startup-folder shortcut follows it.</summary>
     public bool StartWithWindows

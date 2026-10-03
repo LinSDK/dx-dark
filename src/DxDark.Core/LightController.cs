@@ -249,6 +249,9 @@ public sealed class LightController : IDisposable
         return StripCatalog.Sides(model, size, StripLedCount, MonitorAspectRatio());
     }
 
+    /// <summary>Width / height of the synced monitor.</summary>
+    public double ScreenAspect => MonitorAspectRatio();
+
     /// <summary>True when <see cref="EdgeLedCounts"/> comes from the kit's factory counts rather than an estimate.</summary>
     public bool EdgeLedCountsAreExact()
     {

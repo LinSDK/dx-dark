@@ -55,9 +55,9 @@ public partial class CalibrationPanel : UserControl
 
         for (DependencyObject? d = e.OriginalSource as DependencyObject; d is not null; d = ParentOf(d))
         {
-            if (d is FrameworkElement { DataContext: ZoneViewModel } or FrameworkContentElement { DataContext: ZoneViewModel })
+            if (d is PreviewSurface or FrameworkElement { DataContext: ZoneViewModel } or FrameworkContentElement { DataContext: ZoneViewModel })
             {
-                return; // inside a zone card
+                return; // inside a zone card, or the live view (which handles its own clicks)
             }
         }
 
@@ -68,7 +68,7 @@ public partial class CalibrationPanel : UserControl
     {
         for (DependencyObject? d = element; d is not null && d != card; d = ParentOf(d))
         {
-            if (d is ButtonBase or ComboBox or TextBox or Slider or NumberBox or SettingSlider)
+            if (d is ButtonBase or ComboBox or TextBox or Slider or SettingSlider)
             {
                 return true;
             }

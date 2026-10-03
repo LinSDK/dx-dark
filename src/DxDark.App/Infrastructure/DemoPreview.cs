@@ -30,19 +30,27 @@ public static class DemoPreview
             source.FillTestPattern(480, 270);
         }
 
+        var profile = settings.GetActiveProfile();
+        if (profile.HasFilters)
+        {
+            var raw = source;
+            source = new CapturedFrame();
+            new FrameFilters().Apply(raw, source, profile);
+        }
+
         LedLayout layout = settings.Layout;
         LedPlacement[] placements = LayoutGeometry.Placements(layout);
         int[] map = LayoutGeometry.PhysicalToLayout(Math.Max(layout.LedCount, 1), placements.Length);
         var content = new PixelRect(0, 0, source.Width, source.Height);
-        var profile = settings.GetActiveProfile();
 
         var analyzer = new FrameAnalyzer();
         analyzer.Load(source);
         var rects = new PixelRect[placements.Length];
         var samples = new Vector3[placements.Length];
+        ZoneArea[] areas = LayoutGeometry.Areas(layout, profile, source.Width / (double)source.Height);
         for (int i = 0; i < placements.Length; i++)
         {
-            rects[i] = LayoutGeometry.SampleRect(placements[i], content, profile.SampleDepth, profile.ZoneOverlap);
+            rects[i] = LayoutGeometry.SampleRect(placements[i], areas[placements[i].Segment], content);
             samples[i] = analyzer.Average(rects[i], profile.ColorFocus);
         }
 

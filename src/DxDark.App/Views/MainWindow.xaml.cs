@@ -16,14 +16,12 @@ public sealed record NavItem(string Key, string Title, string Glyph);
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
-    private readonly Action _showTestPattern;
     private bool _previewing;
 
-    public MainWindow(MainViewModel vm, Action showTestPattern)
+    public MainWindow(MainViewModel vm)
     {
         InitializeComponent();
         _vm = vm;
-        _showTestPattern = showTestPattern;
         DataContext = vm;
 
         Nav.ItemsSource = new[]
@@ -39,9 +37,22 @@ public partial class MainWindow : Window
             {
                 Nav.SelectedIndex = vm.IsCalibrationPage ? 1 : 0;
                 UpdateHighlight();
+                Surface.AreaProvider = vm.IsCalibrationPage ? vm.Calibration.AreasFor : null;
             }
         };
         vm.Calibration.SelectionChanged += UpdateHighlight;
+        vm.Calibration.AreasChanged += Surface.InvalidateVisual;
+        Surface.AreaProvider = vm.IsCalibrationPage ? vm.Calibration.AreasFor : null;
+        Surface.ZonePressed += zone =>
+        {
+            if (zone < vm.Calibration.Zones.Count)
+            {
+                vm.Calibration.Select(vm.Calibration.Zones[zone]);
+            }
+        };
+        Surface.ZoneAreaChanged += vm.Calibration.SetArea;
+        Surface.SelectedZoneClicked += _ => vm.Calibration.ClearSelection();
+        Surface.EmptyPressed += vm.Calibration.ClearSelection;
 
         Surface.SetLayout(vm.Controller.Settings.Layout);
         vm.LayoutReplaced += () => Surface.SetLayout(vm.Controller.Settings.Layout);
@@ -51,9 +62,17 @@ public partial class MainWindow : Window
             if (!IsVisible)
             {
                 _vm.Calibration.ClearSelection(); // the red dot runs only while Calibration can be seen
+                _vm.Calibration.IsPatternShown = false;
             }
         };
-        StateChanged += (_, _) => UpdatePreviewDemand();
+        StateChanged += (_, _) =>
+        {
+            UpdatePreviewDemand();
+            if (WindowState == WindowState.Minimized)
+            {
+                _vm.Calibration.IsPatternShown = false;
+            }
+        };
         SizeChanged += (_, _) => SettingsSheet.MaxHeight = Math.Max(300, ActualHeight - 100);
         PreviewMouseLeftButtonDown += (_, e) =>
         {
@@ -67,6 +86,26 @@ public partial class MainWindow : Window
             if (e.Key == Key.Escape && SettingsOverlay.Visibility == Visibility.Visible)
             {
                 SettingsOverlay.Visibility = Visibility.Collapsed;
+                e.Handled = true;
+            }
+            else if (e.Key == Key.Escape && _vm.Calibration.IsPatternShown)
+            {
+                _vm.Calibration.IsPatternShown = false;
+                e.Handled = true;
+            }
+            else if (e.Key is Key.Left or Key.Right or Key.Up or Key.Down && _vm.IsCalibrationPage
+                && _vm.Calibration.SelectedZone is not null && !InTextInput())
+            {
+                // Arrow keys move the selected zone's area: half a percent, or 2 % with Shift.
+                double step = Keyboard.Modifiers.HasFlag(ModifierKeys.Shift) ? 0.02 : 0.005;
+                (double dx, double dy) = e.Key switch
+                {
+                    Key.Left => (-step, 0.0),
+                    Key.Right => (step, 0.0),
+                    Key.Up => (0.0, -step),
+                    _ => (0.0, step),
+                };
+                _vm.Calibration.MoveSelectedArea(dx, dy);
                 e.Handled = true;
             }
         };
@@ -109,6 +148,9 @@ public partial class MainWindow : Window
 
     private void OnPreview(PreviewSnapshot snapshot) => Surface.Update(snapshot);
 
+    private static bool InTextInput() =>
+        Keyboard.FocusedElement is TextBox or ComboBox or ComboBoxItem or Slider;
+
     /// <summary>In Calibration, the selected zone is outlined in the live view.</summary>
     private void UpdateHighlight() =>
         Surface.HighlightSegment = _vm.IsCalibrationPage ? _vm.Calibration.SelectedIndex : -1;
@@ -129,7 +171,6 @@ public partial class MainWindow : Window
 
     private void OnSetUpZones(object sender, RoutedEventArgs e) => ShowPage(calibration: true);
 
-    private void OnShowTestPattern(object sender, RoutedEventArgs e) => _showTestPattern();
 
     private void OnPresetMenu(object sender, RoutedEventArgs e)
     {

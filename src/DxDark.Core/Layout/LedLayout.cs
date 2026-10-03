@@ -19,7 +19,6 @@ public enum ScreenEdge
 public sealed class LedSegment
 {
     /// <summary>Largest nudge, in LED widths, either way.</summary>
-    public const double MaxNudge = 10;
 
     public ScreenEdge Edge { get; set; } = ScreenEdge.Top;
 
@@ -32,11 +31,19 @@ public sealed class LedSegment
     /// </summary>
     public bool Reversed { get; set; }
 
-    /// <summary>
-    /// Moves where this zone samples the screen, in LED widths: negative towards the left / top,
-    /// positive towards the right / bottom. For strips mounted slightly off.
-    /// </summary>
+    // Versions 0.0.2–0.2.0 kept these per zone; they are only read to move them into each preset's
+    // zone area (see AppSettings.Normalize) and are not saved any more.
+
+    /// <summary>Sampling shift in LED widths (versions 0.0.2–0.2.0).</summary>
     public double Nudge { get; set; }
+
+    /// <summary>Sampling depth of this zone (version 0.2.0).</summary>
+    public double? SampleDepth { get; set; }
+
+    /// <summary>Overlap of this zone (version 0.2.0).</summary>
+    public double? ZoneOverlap { get; set; }
+
+    internal bool HasOldSampling => Nudge != 0 || SampleDepth is not null || ZoneOverlap is not null;
 
     public LedSegment Clone() => (LedSegment)MemberwiseClone();
 

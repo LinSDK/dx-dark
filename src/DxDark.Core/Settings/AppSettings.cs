@@ -217,7 +217,9 @@ public sealed class AppSettings
         foreach (LedSegment segment in Layout.Segments)
         {
             segment.LedCount = Math.Clamp(segment.LedCount, 1, 254);
-            segment.Nudge = double.IsFinite(segment.Nudge) ? Math.Clamp(segment.Nudge, -LedSegment.MaxNudge, LedSegment.MaxNudge) : 0;
+            segment.Nudge = double.IsFinite(segment.Nudge) ? Math.Clamp(segment.Nudge, -20, 20) : 0;
+            segment.SampleDepth = segment.SampleDepth is { } depth && double.IsFinite(depth) ? Math.Clamp(depth, 0.01, 0.5) : null;
+            segment.ZoneOverlap = segment.ZoneOverlap is { } overlap && double.IsFinite(overlap) ? Math.Clamp(overlap, 0, 3) : null;
             if (!Enum.IsDefined(segment.Edge) || segment.Edge == ScreenEdge.None)
             {
                 segment.Edge = ScreenEdge.Top;
@@ -258,6 +260,46 @@ public sealed class AppSettings
         if (!Profiles.Any(p => p.Name == ActiveProfile))
         {
             ActiveProfile = Profiles[0].Name;
+        }
+
+        MoveOldZoneSampling();
+        foreach (Profile profile in Profiles)
+        {
+            profile.TrimAreas(Layout.Segments.Count);
+        }
+    }
+
+    /// <summary>
+    /// Versions 0.0.2–0.2.0 kept a nudge (and in 0.2.0 a depth and overlap) on each zone. Zones
+    /// now sample an area saved in each preset, so those become an area in every preset that has
+    /// none for the zone yet: the usual area, shifted by the nudge.
+    /// </summary>
+    private void MoveOldZoneSampling()
+    {
+        for (int s = 0; s < Layout.Segments.Count; s++)
+        {
+            LedSegment zone = Layout.Segments[s];
+            if (!zone.HasOldSampling)
+            {
+                continue;
+            }
+
+            foreach (Profile profile in Profiles)
+            {
+                if (profile.AreaAt(s) is not null)
+                {
+                    continue;
+                }
+
+                ZoneArea area = ZoneArea.Default(zone.Edge, zone.SampleDepth ?? profile.SampleDepth, zone.ZoneOverlap ?? profile.ZoneOverlap, 16.0 / 9.0);
+                double shift = zone.LedCount > 0 ? zone.Nudge / zone.LedCount : 0;
+                area = LedSegment.IsHorizontal(zone.Edge) ? area with { X = area.X + shift * area.Width } : area with { Y = area.Y + shift * area.Height };
+                profile.SetArea(s, area);
+            }
+
+            zone.Nudge = 0;
+            zone.SampleDepth = null;
+            zone.ZoneOverlap = null;
         }
     }
 }

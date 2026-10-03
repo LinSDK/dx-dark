@@ -9,6 +9,7 @@ using DxDark.App.Infrastructure;
 using DxDark.App.Tray;
 using DxDark.App.ViewModels;
 using DxDark.App.Views;
+using DxDark.Capture;
 using DxDark.Core;
 using DxDark.Core.Effects;
 using DxDark.Core.Layout;
@@ -30,7 +31,8 @@ public partial class App : Application
     private TrayIcon? _tray;
     private SystemMonitor? _system;
     private MainWindow? _window;
-    private CalibrationWindow? _testPattern;
+    private TestPatternWindow? _testPattern;
+    private Rect? _boundsBeforePattern;
     private bool _warnedAboutZones;
     private bool _exiting;
 
@@ -82,6 +84,14 @@ public partial class App : Application
         _controller = new LightController(_store);
         _vm = new MainViewModel(_controller, Dispatcher, demoMode: false);
         _tray = new TrayIcon(_vm, Dispatcher, () => ShowMainWindow(), OpenCalibration, ExitApp);
+        _vm.Calibration.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(CalibrationViewModel.IsPatternShown))
+            {
+                UpdateTestPattern();
+            }
+        };
+        _vm.Calibration.PatternChanged += () => _testPattern?.ShowPattern(_vm.Calibration.SelectedPattern.Pattern, _vm.Calibration.PatternSpeed);
         _system = new SystemMonitor(_controller);
         _controller.Notice += message => Dispatcher.BeginInvoke(() => _tray?.ShowNotice(message));
         _controller.Start();
@@ -112,7 +122,8 @@ public partial class App : Application
 
         if (_window is null)
         {
-            _window = new MainWindow(_vm, ShowTestPattern);
+            _window = new MainWindow(_vm);
+            _window.Activated += (_, _) => _testPattern?.PlaceBehind(_window);
             _window.IsVisibleChanged += (_, _) =>
             {
                 // Closing the control panel without any zones: a reminder from the tray, once.
@@ -145,27 +156,97 @@ public partial class App : Application
 
     private void OpenCalibration() => ShowMainWindow(calibration: true);
 
-    /// <summary>The full-screen test pattern, with the zone controls over it.</summary>
-    private void ShowTestPattern()
+    /// <summary>Shows or hides the test pattern behind the control panel (Calibration → Test pattern).</summary>
+    private void UpdateTestPattern()
     {
-        if (_controller is null || _vm is null || _exiting)
+        if (_controller is null || _vm is null)
         {
             return;
         }
 
-        if (_testPattern is { IsVisible: true })
+        bool wanted = _vm.Calibration.IsPatternShown && !_exiting && _window is { IsVisible: true };
+        if (wanted && _testPattern is null)
         {
-            _testPattern.Activate();
-            return;
+            MonitorInfo? monitor = SyncedMonitor();
+            _testPattern = new TestPatternWindow(monitor);
+            _testPattern.ShowPattern(_vm.Calibration.SelectedPattern.Pattern, _vm.Calibration.PatternSpeed);
+            _testPattern.Show();
+            _controller.BeginCalibration();
+            KeepWindowInsideEdges(monitor);
+            _testPattern.PlaceBehind(_window!);
+            _window!.Activate();
         }
-
-        _testPattern = new CalibrationWindow(_controller, _vm.Calibration);
-        _testPattern.Closed += (_, _) =>
+        else if (!wanted && _testPattern is not null)
         {
+            _testPattern.Close();
             _testPattern = null;
-            _vm?.RefreshState();
-        };
-        _testPattern.Show();
+            _controller.EndCalibration();
+            if (_boundsBeforePattern is { } bounds && _window is not null)
+            {
+                _window.Left = bounds.X;
+                _window.Top = bounds.Y;
+                _window.Width = bounds.Width;
+                _window.Height = bounds.Height;
+            }
+
+            _boundsBeforePattern = null;
+        }
+    }
+
+    /// <summary>
+    /// The strip samples the outer 15 % of the screen while the pattern shows, so the control panel
+    /// must stay inside that border: it is restored from maximized, and moved (and shrunk if needed)
+    /// to the middle of the synced monitor. Its old place is restored when the pattern goes.
+    /// </summary>
+    private void KeepWindowInsideEdges(MonitorInfo? monitor)
+    {
+        if (_window is null || monitor is null || PresentationSource.FromVisual(_window) is not { CompositionTarget: { } target })
+        {
+            return;
+        }
+
+        Matrix fromDevice = target.TransformFromDevice;
+        Point topLeft = fromDevice.Transform(new Point(monitor.Left, monitor.Top));
+        Point bottomRight = fromDevice.Transform(new Point(monitor.Left + monitor.Width, monitor.Top + monitor.Height));
+        var screen = new Rect(topLeft, bottomRight);
+        double border = screen.Height * 0.17;
+        var inside = new Rect(screen.X + border, screen.Y + border, Math.Max(0, screen.Width - 2 * border), Math.Max(0, screen.Height - 2 * border));
+
+        if (_window.WindowState == WindowState.Maximized)
+        {
+            _window.WindowState = WindowState.Normal;
+        }
+
+        var current = new Rect(_window.Left, _window.Top, _window.ActualWidth, _window.ActualHeight);
+        if (!screen.IntersectsWith(current) || inside.Contains(current))
+        {
+            return; // on another monitor, or already clear of the edges
+        }
+
+        _boundsBeforePattern = current;
+        double width = Math.Max(_window.MinWidth, Math.Min(current.Width, inside.Width));
+        double height = Math.Max(_window.MinHeight, Math.Min(current.Height, inside.Height));
+        _window.Width = width;
+        _window.Height = height;
+        _window.Left = inside.X + (inside.Width - width) / 2;
+        _window.Top = inside.Y + (inside.Height - height) / 2;
+    }
+
+    private MonitorInfo? SyncedMonitor()
+    {
+        try
+        {
+            List<MonitorInfo> monitors = MonitorEnumerator.List();
+            string? name = _controller?.Settings.MonitorDeviceName;
+            return monitors.FirstOrDefault(m => string.Equals(m.DeviceName, name, StringComparison.OrdinalIgnoreCase))
+                ?? monitors.FirstOrDefault(m => m.IsPrimary)
+                ?? monitors.FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Log.Warn($"Test pattern: could not list monitors ({ex.Message})");
+            return null;
+        }
     }
 
     /// <summary>DXDark.ini was edited by hand while DX Dark runs: use the new settings everywhere.</summary>
@@ -207,6 +288,7 @@ public partial class App : Application
 
         _exiting = true;
         _testPattern?.Close();
+        _testPattern = null;
         if (_window is not null)
         {
             _window.AllowClose = true;
@@ -257,7 +339,7 @@ public partial class App : Application
         _controller = new LightController(store);
         _vm = new MainViewModel(_controller, Dispatcher, demoMode: true);
 
-        var window = new MainWindow(_vm, () => { })
+        var window = new MainWindow(_vm)
         {
             ShowActivated = false,
             ShowInTaskbar = false,
@@ -288,10 +370,26 @@ public partial class App : Application
         Capture("main-settings");
         window.HideSettings();
 
+        // The Filter section, with a blur and a hue shift applied to the picture.
+        _vm.Presets.FilterBlur = 0.03;
+        _vm.Presets.FilterHueShift = 60;
+        (window.FindName("PresetScroll") as ScrollViewer)?.ScrollToEnd();
+        Capture("main-filter");
+        _vm.Presets.FilterBlur = 0;
+        _vm.Presets.FilterHueShift = 0;
+        (window.FindName("PresetScroll") as ScrollViewer)?.ScrollToHome();
+
         // Calibration page, with the second zone selected (the red dot part-way along it).
         window.ShowPage(calibration: true);
+        _vm.Calibration.SetArea(1, new ZoneArea(0.1, 0.03, 0.8, 0.22, 0.6)); // a hand-drawn area for the top
         _vm.Calibration.Select(_vm.Calibration.Zones[1]);
         Capture("main-calibration");
+
+        // The test pattern behind the control panel, as on a 1440p screen.
+        _vm.Calibration.SelectedPattern = _vm.Calibration.Patterns[1]; // colored arms; also switches the pattern on
+        Capture("main-calibration-pattern");
+        SavePng(PatternBehind(RenderBitmap((FrameworkElement)window.Content), CalibrationPattern.ColoredArms), Path.Combine(folder, "test-pattern.png"));
+        _vm.Calibration.IsPatternShown = false;
 
         // First launch: no zones yet. Goes through the same path as a hand-edited settings file.
         AppSettings edited = SettingsIni.Read(SettingsIni.Write(store.Current, SettingsStore.Version))!;
@@ -331,7 +429,7 @@ public partial class App : Application
         SavePng((FrameworkElement)dialog.Content, Path.Combine(folder, "dialog.png"));
         dialog.Close();
 
-        var prompt = new DialogWindow("Save as new preset", "", "Save", "Cancel", destructive: false, input: "My preset")
+        var prompt = new DialogWindow("Save preset", "", "Save", "Cancel", destructive: false, input: "Cinema night")
         {
             ShowActivated = false,
             ShowInTaskbar = false,
@@ -372,25 +470,6 @@ public partial class App : Application
         SavePng((FrameworkElement)picker.Content, Path.Combine(folder, "file-picker.png"));
         picker.Close();
 
-        // Full-screen test pattern with the zone controls.
-        store.Current.Layout = StripCatalog.DefaultLayout("000609", 32, 110, 16.0 / 9.0);
-        _vm.Calibration.Reload();
-        var calibration = new CalibrationWindow(_controller, _vm.Calibration, live: false)
-        {
-            ShowActivated = false,
-            ShowInTaskbar = false,
-            Topmost = false,
-            Width = 1600,
-            Height = 900,
-            Left = SystemParameters.VirtualScreenLeft - 4000,
-            Top = SystemParameters.VirtualScreenTop,
-        };
-        calibration.FreezeAt(2.2);
-        calibration.Show();
-        Flush();
-        SavePng((FrameworkElement)calibration.Content, Path.Combine(folder, "test-pattern.png"));
-        calibration.Close();
-
         foreach (CalibrationPattern pattern in Enum.GetValues<CalibrationPattern>())
         {
             var canvas = new CalibrationCanvas { Width = 640, Height = 360, Pattern = pattern, FixedTime = 2.2 };
@@ -402,6 +481,26 @@ public partial class App : Application
 
         SavePng(EffectSheet(), Path.Combine(folder, "effects.png"));
         Shutdown();
+    }
+
+    /// <summary>A screen-sized test pattern with the control panel in the middle, as the user sees it.</summary>
+    private static FrameworkElement PatternBehind(BitmapSource window, CalibrationPattern pattern)
+    {
+        const double W = 2560, H = 1440;
+        var screen = new Grid { Width = W, Height = H };
+        screen.Children.Add(new CalibrationCanvas { Pattern = pattern, FixedTime = 2.2 });
+        screen.Children.Add(new Image
+        {
+            Source = window,
+            Width = window.PixelWidth,
+            Height = window.PixelHeight,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        screen.Measure(new Size(W, H));
+        screen.Arrange(new Rect(0, 0, W, H));
+        screen.UpdateLayout();
+        return screen;
     }
 
     /// <summary>Every built-in effect at its thumbnail moment, labelled, for checking how they look.</summary>
@@ -427,12 +526,19 @@ public partial class App : Application
 
     private void Flush() => Dispatcher.Invoke(() => { }, DispatcherPriority.ApplicationIdle);
 
-    private static void SavePng(FrameworkElement element, string path)
+    private static BitmapSource RenderBitmap(FrameworkElement element)
     {
         int width = (int)Math.Ceiling(element.ActualWidth);
         int height = (int)Math.Ceiling(element.ActualHeight);
         var bitmap = new RenderTargetBitmap(Math.Max(1, width), Math.Max(1, height), 96, 96, PixelFormats.Pbgra32);
         bitmap.Render(element);
+        bitmap.Freeze();
+        return bitmap;
+    }
+
+    private static void SavePng(FrameworkElement element, string path)
+    {
+        BitmapSource bitmap = RenderBitmap(element);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
         using FileStream file = File.Create(path);

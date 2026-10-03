@@ -64,19 +64,19 @@ public static partial class SettingsIni
             if (i == 0)
             {
                 section.Comment("Zones in strip order, from where the cable plugs in. Edge: Left, Top, Right or Bottom.")
-                    .Comment("Orientation: LeftToRight or RightToLeft (top, bottom), TopToBottom or BottomToTop (sides). Nudge: in LEDs.");
+                    .Comment("Orientation: LeftToRight or RightToLeft (top, bottom), TopToBottom or BottomToTop (sides).")
+                    .Comment("The part of the screen each zone samples is saved in each preset (Zone1Area, Zone2Area...).");
             }
 
             section
                 .Set("Edge", zone.Edge.ToString())
                 .Set("LEDs", zone.LedCount.ToString(Invariant))
-                .Set("Orientation", OrientationName(zone))
-                .Set("Nudge", Number(zone.Nudge));
+                .Set("Orientation", OrientationName(zone));
         }
 
         for (int i = 0; i < settings.Profiles.Count; i++)
         {
-            WriteProfile(ini.Add($"Preset {i + 1}"), settings.Profiles[i]);
+            WriteProfile(ini.Add($"Preset {i + 1}"), settings.Profiles[i], explain: i == 0);
         }
 
         List<VideoEffect> videos;
@@ -177,6 +177,8 @@ public static partial class SettingsIni
             var zone = new LedSegment { Edge = edge, Reversed = LedSegment.ClockwiseReversed(edge) };
             ReadNumber(section, "LEDs", v => zone.LedCount = (int)Math.Round(v));
             ReadNumber(section, "Nudge", v => zone.Nudge = v);
+            ReadPercent(section, "SamplingDepth", v => zone.SampleDepth = v);
+            ReadPercent(section, "ZoneOverlap", v => zone.ZoneOverlap = v);
             if (ParseReversed(section.Get("Orientation")) is { } reversed)
             {
                 zone.Reversed = reversed;
@@ -231,7 +233,25 @@ public static partial class SettingsIni
         return profile;
     }
 
-    private static void WriteProfile(IniSection section, Profile p) => section
+    private static void WriteProfile(IniSection section, Profile p, bool explain = true)
+    {
+        if (explain)
+        {
+            section.Comment("SamplingDepth and ZoneOverlap: the usual area of a zone that has no ZoneNArea of its own.")
+                .Comment("ZoneNArea: the part of the screen zone N samples (measured from the top-left of the picture) and its overlap.");
+        }
+
+        WriteProfileValues(section, p);
+        for (int i = 0; i < p.ZoneAreas.Count; i++)
+        {
+            if (p.ZoneAreas[i] is { } a)
+            {
+                section.Set($"Zone{i + 1}Area", $"x {Percent(a.X)}, y {Percent(a.Y)}, width {Percent(a.Width)}, height {Percent(a.Height)}, overlap {Percent(a.Overlap)}");
+            }
+        }
+    }
+
+    private static void WriteProfileValues(IniSection section, Profile p) => section
         .Set("Name", p.Name)
         .Set("UpdatesPerSecond", p.FrameRate.ToString(Invariant))
         .Set("SamplingDepth", Percent(p.SampleDepth))
@@ -246,7 +266,12 @@ public static partial class SettingsIni
         .Set("Contrast", Percent(p.Contrast))
         .Set("Gamma", Number(p.Gamma))
         .Set("Temperature", Number(p.Temperature) + " K")
-        .Set("BlackThreshold", Percent(p.BlackThreshold));
+        .Set("BlackThreshold", Percent(p.BlackThreshold))
+        .Set("Blur", Percent(p.FilterBlur))
+        .Set("Pixelate", Percent(p.FilterPixelate))
+        .Set("HueShift", Number(p.FilterHueShift) + " deg")
+        .Set("Posterize", p.FilterPosterize > 0 ? $"{p.FilterPosterize} levels" : "Off")
+        .Set("Invert", Bool(p.FilterInvert));
 
     private static Profile ReadProfile(IniSection section, string fallbackName)
     {
@@ -265,6 +290,26 @@ public static partial class SettingsIni
         ReadNumber(section, "Gamma", v => p.Gamma = v);
         ReadNumber(section, "Temperature", v => p.Temperature = v);
         ReadPercent(section, "BlackThreshold", v => p.BlackThreshold = v);
+        ReadPercent(section, "Blur", v => p.FilterBlur = v);
+        ReadPercent(section, "Pixelate", v => p.FilterPixelate = v);
+        ReadNumber(section, "HueShift", v => p.FilterHueShift = v);
+        if (section.Get("Posterize") is { } posterize)
+        {
+            p.FilterPosterize = TryNumber(posterize, out double levels) ? (int)Math.Round(levels) : 0;
+        }
+
+        ReadBool(section, "Invert", v => p.FilterInvert = v);
+        for (int zone = 1; zone <= 64; zone++)
+        {
+            if (section.Get($"Zone{zone}Area") is { } text)
+            {
+                double[] n = Numbers().Matches(text).Select(m => double.Parse(m.Value.Replace(',', '.'), Invariant)).ToArray();
+                if (n.Length >= 4)
+                {
+                    p.SetArea(zone - 1, new ZoneArea(n[0] / 100, n[1] / 100, n[2] / 100, n[3] / 100, n.Length > 4 ? n[4] / 100 : p.ZoneOverlap));
+                }
+            }
+        }
         return p;
     }
 
@@ -367,4 +412,7 @@ public static partial class SettingsIni
 
     [GeneratedRegex(@"^\s*[+-]?(\d+([.,]\d*)?|[.,]\d+)")]
     private static partial Regex LeadingNumber();
+
+    [GeneratedRegex(@"[+-]?\d+(\.\d+)?")]
+    private static partial Regex Numbers();
 }

@@ -70,7 +70,18 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(new[] { ScreenEdge.Right, ScreenEdge.Top, ScreenEdge.Left, ScreenEdge.Bottom }, s.Layout.Segments.Select(z => z.Edge));
         Assert.Equal(new[] { 20, 35, 20, 35 }, s.Layout.Segments.Select(z => z.LedCount));
         Assert.Equal(new[] { true, true, false, false }, s.Layout.Segments.Select(z => z.Reversed));
-        Assert.Equal(new[] { -4.0, 0, 0, -3 }, s.Layout.Segments.Select(z => z.Nudge));
+        // The nudges became areas in every preset: zone 1 (right side, 20 LEDs) moved up 4 LEDs,
+        // zone 4 (bottom, 35 LEDs) 3 LEDs to the left; zones without a nudge use the whole edge.
+        Assert.All(s.Layout.Segments, z => Assert.Equal(0, z.Nudge));
+        foreach (Profile preset in s.Profiles)
+        {
+            Assert.Equal(-4.0 / 20, preset.AreaAt(0)!.Value.Y, 4); // stored to 0.01 %
+            Assert.Null(preset.AreaAt(1));
+            Assert.Null(preset.AreaAt(2));
+            Assert.Equal(-3.0 / 35, preset.AreaAt(3)!.Value.X, 4);
+        }
+
+        Assert.Equal(0.04 * 9 / 16, s.Profiles.Single(p => p.Name == "Cinema").AreaAt(0)!.Value.Width, 4);
         Assert.Equal(51, s.Calibration.HardwareBrightness);
         Assert.Equal(0.3333, s.Calibration.PowerLimit, 4);
         Assert.Equal("Cinema", s.ActiveProfile);
@@ -100,8 +111,8 @@ public sealed class SettingsTests : IDisposable
         original.Calibration.PowerLimit = 0.5;
         original.Calibration.HardwareBrightness = 128;
         original.Strip = new StripMemory { ModelId = "000609", DisplaySizeInches = 27, LedCount = 92 };
-        original.Layout.Segments.Add(new LedSegment { Edge = ScreenEdge.Bottom, LedCount = 29, Reversed = true, Nudge = 1.5 });
-        original.Layout.Segments.Add(new LedSegment { Edge = ScreenEdge.Left, LedCount = 17, Reversed = true, Nudge = -2 });
+        original.Layout.Segments.Add(new LedSegment { Edge = ScreenEdge.Bottom, LedCount = 29, Reversed = true });
+        original.Layout.Segments.Add(new LedSegment { Edge = ScreenEdge.Left, LedCount = 17, Reversed = true });
         original.Profiles = [BuiltInProfiles.Find("Vivid")!.CloneAs("  My [odd] = preset ")];
         original.Profiles[0].Smoothing = 333;
         original.Profiles[0].DetectBlackBars = false;
@@ -128,8 +139,8 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal(("000609", 27, 92), (copy.Strip.ModelId, copy.Strip.DisplaySizeInches, copy.Strip.LedCount));
         Assert.Collection(
             copy.Layout.Segments,
-            z => Assert.Equal((ScreenEdge.Bottom, 29, true, 1.5), (z.Edge, z.LedCount, z.Reversed, z.Nudge)),
-            z => Assert.Equal((ScreenEdge.Left, 17, true, -2.0), (z.Edge, z.LedCount, z.Reversed, z.Nudge)));
+            z => Assert.Equal((ScreenEdge.Bottom, 29, true), (z.Edge, z.LedCount, z.Reversed)),
+            z => Assert.Equal((ScreenEdge.Left, 17, true), (z.Edge, z.LedCount, z.Reversed)));
         Profile preset = Assert.Single(copy.Profiles);
         Assert.Equal("My [odd] = preset", preset.Name);
         Assert.Equal(preset.Name, copy.ActiveProfile);
@@ -179,7 +190,7 @@ public sealed class SettingsTests : IDisposable
         Assert.Equal("Cinema", s.ActiveProfile);
         Assert.Collection(
             s.Layout.Segments, // ordered by number; the zone with an unknown edge is skipped
-            z => Assert.Equal((ScreenEdge.Right, 20, true, -1.5), (z.Edge, z.LedCount, z.Reversed, z.Nudge)),
+            z => Assert.Equal((ScreenEdge.Right, 20, true), (z.Edge, z.LedCount, z.Reversed)),
             z => Assert.Equal((ScreenEdge.Top, 35, true), (z.Edge, z.LedCount, z.Reversed)));
         Profile p = Assert.Single(s.Profiles);
         Assert.Equal(0.18, p.SampleDepth, 6);

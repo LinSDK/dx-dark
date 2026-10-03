@@ -59,6 +59,8 @@
                             <DockPanel>
                                 <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE711;" FontSize="10"
                                         ToolTip="Remove zone" Command="{Binding RemoveCommand}" />
+                                <Button DockPanel.Dock="Right" Style="{StaticResource IconButton}" Content="&#xE72C;" FontSize="11"
+                                        ToolTip="Reset this zone's area to the whole edge" Command="{Binding ResetAreaCommand}" />
                                 <Border Width="24" Height="24" CornerRadius="12" VerticalAlignment="Center">
                                     <Border.Style>
                                         <Style TargetType="Border">
@@ -80,24 +82,14 @@
                                                     Step="1" Format="0" DefaultValue="{Binding DetectedLeds}" ValueWidth="58"
                                                     Description="LEDs in this zone. The strip lights them while you drag." />
 
-                            <Grid Margin="0,2,4,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="10" />
-                                    <ColumnDefinition Width="92" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="Orientation" Style="{StaticResource Caption}" Margin="0,0,0,4" />
-                                <TextBlock Grid.Column="2" Text="Nudge" Style="{StaticResource Caption}" Margin="0,0,0,4"
-                                           ToolTip="Moves where this zone samples the screen, in LEDs" />
-                                <ComboBox Grid.Row="1" ItemsSource="{Binding OrientationChoices}" SelectedIndex="{Binding OrientationIndex}"
-                                          ToolTip="The direction the red dot runs on the strip" />
-                                <controls:NumberBox Grid.Row="1" Grid.Column="2" Value="{Binding Nudge}" Minimum="-10" Maximum="10" Step="0.5"
-                                                    ToolTip="Moves where this zone samples the screen, in LEDs" />
-                            </Grid>
+                            <TextBlock Text="Orientation" Style="{StaticResource Caption}" Margin="0,2,0,4" />
+                            <ComboBox Margin="0,0,4,0" ItemsSource="{Binding OrientationChoices}" SelectedIndex="{Binding OrientationIndex}"
+                                      ToolTip="The direction the red dot runs on the strip" />
+
+                            <controls:SettingSlider Margin="0,10,4,0" Label="Zone overlap" Value="{Binding ZoneOverlap}"
+                                                    Minimum="0" Maximum="3" Step="0.1" Scale="100" Format="0" Unit="%"
+                                                    DefaultValue="{Binding PresetOverlap}" ValueWidth="64"
+                                                    Description="How much each LED's slice of this zone's area overlaps its neighbors. Saved in the preset." />
                         </StackPanel>
                     </Border>
                 </DataTemplate>
